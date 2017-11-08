@@ -55,7 +55,7 @@
         <bean class="org.loxf.jyapi.interceptor.BaseInterceptor" />
     </mvc:interceptors>
 
-    <bean id="jedisUtil" class="org.loxf.jyapi.util.JedisUtil" >
+    <bean id="jedisUtil" class="org.loxf.jyadmin.base.util.JedisUtil" >
         <constructor-arg index="0" ref="jedisPool"/>
         <constructor-arg index="1" value="${env}"/>
     </bean>
@@ -75,4 +75,5 @@
     </bean>
 
     <import resource="spring/dubbo.xml"/>
+    <import resource="classpath*:jy-admin-base.xml"/>
 </beans>

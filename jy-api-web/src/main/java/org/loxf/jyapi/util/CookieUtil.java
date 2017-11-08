@@ -3,9 +3,12 @@ package org.loxf.jyapi.util;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.commons.lang3.StringUtils;
+import org.loxf.jyadmin.base.constant.BaseConstant;
 import org.loxf.jyadmin.base.util.EncryptionKeyUtil;
-import org.loxf.jyadmin.client.constant.BaseConstant;
+import org.loxf.jyadmin.base.util.JedisUtil;
+import org.loxf.jyadmin.base.util.SpringApplicationContextUtil;
 import org.loxf.jyadmin.client.dto.AdminDto;
+import org.loxf.jyadmin.client.dto.CustDto;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -87,8 +90,8 @@ public class CookieUtil {
         return sessionValue;
     }
 
-    public static AdminDto getAdmin(HttpServletRequest request){
-        String token = getAdminToken(request);
+    public static CustDto getCust(HttpServletRequest request){
+        String token = getUserToken(request);
         if(StringUtils.isBlank(token)){
             return null;
         }
@@ -96,13 +99,13 @@ public class CookieUtil {
         if(StringUtils.isBlank(str)){
             return null;
         }
-        return JSON.parseObject(str, AdminDto.class);
+        return JSON.parseObject(str, CustDto.class);
     }
 
-    public static String getAdminToken(HttpServletRequest request){
-        Object sessionValue = getSession(request, BaseConstant.ADMIN_COOKIE_NAME);
+    public static String getUserToken(HttpServletRequest request){
+        Object sessionValue = getSession(request, BaseConstant.USER_COOKIE_NAME);
         if(sessionValue==null){
-            return getCookieValue(request, BaseConstant.ADMIN_COOKIE_NAME);
+            return getCookieValue(request, BaseConstant.USER_COOKIE_NAME);
         }
         return sessionValue.toString();
     }

@@ -29,13 +29,19 @@
             </dependency>
             <dependency>
                 <groupId>org.loxf</groupId>
-                <artifactId>jy-admin-client</artifactId>
+                <artifactId>jy-admin-base</artifactId>
                 <version>${jyadmin.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.loxf</groupId>
-                <artifactId>jy-admin-base</artifactId>
+                <artifactId>jy-admin-client</artifactId>
                 <version>${jyadmin.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.loxf</groupId>
+                        <artifactId>jy-admin-base</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <!--Spring Framework-->
             <dependency>

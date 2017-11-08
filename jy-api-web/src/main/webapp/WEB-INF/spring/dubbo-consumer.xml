@@ -8,4 +8,7 @@
 
     <dubbo:reference id="configService" timeout="${dubbo.client.timeout}" version="${dubbo.client.version}"
                      interface="org.loxf.jyadmin.client.service.ConfigService"></dubbo:reference>
+
+    <dubbo:reference id="custService" timeout="${dubbo.client.timeout}" version="${dubbo.client.version}"
+                     interface="org.loxf.jyadmin.client.service.CustService"></dubbo:reference>
 </beans>
