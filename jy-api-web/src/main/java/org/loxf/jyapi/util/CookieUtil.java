@@ -102,6 +102,19 @@ public class CookieUtil {
         return JSON.parseObject(str, CustDto.class);
     }
 
+    public static String getCustId(HttpServletRequest request){
+        String token = getUserToken(request);
+        if(StringUtils.isBlank(token)){
+            return null;
+        }
+        String str = SpringApplicationContextUtil.getBean(JedisUtil.class).get(token);
+        if(StringUtils.isBlank(str)){
+            return null;
+        }
+        CustDto custDto = JSON.parseObject(str, CustDto.class);
+        return custDto.getCustId();
+    }
+
     public static String getUserToken(HttpServletRequest request){
         Object sessionValue = getSession(request, BaseConstant.USER_COOKIE_NAME);
         if(sessionValue==null){

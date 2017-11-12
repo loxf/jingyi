@@ -39,7 +39,8 @@ public class CustController {
      */
     @RequestMapping("/api/cust/init")
     @ResponseBody
-    public BaseResult init(){
+    public BaseResult init(HttpServletRequest request){
+
         return new BaseResult();
     }
     /**

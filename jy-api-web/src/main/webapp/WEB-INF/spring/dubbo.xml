@@ -8,7 +8,7 @@
         http://code.alibabatech.com/schema/dubbo/dubbo.xsd">
 
     <dubbo:application name="ai-api"/>
-    <dubbo:registry address="${dubbo.server.registry}" file="${app.tmpDir}/output/${app.name}.cache"/>
+    <dubbo:registry protocol="zookeeper" timeout="30000" address="${dubbo.server.registry}" file="${app.tmpDir}/output/${app.name}.cache"/>
     <dubbo:consumer check="false"/>
 
     <import resource="dubbo-consumer.xml"/>

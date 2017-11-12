@@ -5,40 +5,36 @@ import org.apache.commons.lang3.StringUtils;
 import org.loxf.jyadmin.base.constant.BaseConstant;
 import org.loxf.jyadmin.base.util.JedisUtil;
 import org.loxf.jyadmin.base.util.SpringApplicationContextUtil;
-import org.loxf.jyadmin.base.util.weixin.WeixinUtil;
 import org.loxf.jyadmin.client.dto.CustDto;
+import org.loxf.jyadmin.client.service.ConfigService;
 import org.loxf.jyapi.util.CookieUtil;
 import org.loxf.jyadmin.base.bean.BaseResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.PrintWriter;
-import java.net.URLEncoder;
-import java.util.Random;
 
 public class BaseInterceptor extends HandlerInterceptorAdapter {
     private static Logger logger = LoggerFactory.getLogger(BaseInterceptor.class);
-    private static String [] excludeUrl = {"/api/login"};
+    private static String [] excludeUrl = {"/api/login", "/api/loginByWx"};
+    @Autowired
+    private ConfigService configService;
+
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        request.setAttribute("basePic",
+                configService.queryConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "PIC_SERVER_URL").getData().getConfigValue());
+        response.setHeader("Access-Control-Allow-Origin","*");
+        response.setHeader("Access-Control-Allow-Methods","POST,GET,OPTIONS");
         // 判断用户是否登录系统
         if(needFilter(request.getRequestURI())) {
             if (!hasLogin(request, response)) {
-                // 未登录系统跳转到登录
-                // 获取登录随机code，五分钟失效
-                String code = getRandomCharAndNumr(8);
-                String loginUrl = WeixinUtil.getLoginUrl(request.getRequestURL().toString(), code);
-                // TODO 注释DEBUG
-                if("JY123456QWE".equals(request.getParameter("XDebug"))){
-                    loginUrl = String.format(BaseConstant.LOGIN_URL, URLEncoder.encode(request.getRequestURL().toString() + "?" + request.getQueryString(), "utf-8") ) + "&state=" + code + "&XDebug=IYUTERESGBXVCMSWB";
-                    loginUrl = loginUrl.replaceAll("https://www.jingyizaixian.com", "http://127.0.0.1:8081");
-                }
-                SpringApplicationContextUtil.getBean(JedisUtil.class).set(code, (System.currentTimeMillis()+ 5 * 60 * 1000) + "", 5 * 60);
-                response.sendRedirect(loginUrl);
+                this.writeResult(response, new BaseResult(BaseConstant.NOT_LOGIN, "未登录"));
                 return false;
             }
         }
@@ -62,6 +58,8 @@ public class BaseInterceptor extends HandlerInterceptorAdapter {
     private void writeResult(HttpServletResponse response, BaseResult baseResult) {
         PrintWriter writer = null;
         try {
+            response.setHeader("Content-type", "text/html;charset=UTF-8");
+            response.setCharacterEncoding("UTF-8");
             writer = response.getWriter();
             writer.write(JSON.toJSONString(baseResult));
             writer.flush();
@@ -97,7 +95,7 @@ public class BaseInterceptor extends HandlerInterceptorAdapter {
                     return false;
                 }
                 CustDto custDto = JSON.parseObject(custInfo, CustDto.class);
-                if(!tokenARR[1].equals(custDto.getOpenid())){
+                if(!tokenARR[1].equals(custDto.getCustId())){
                     return false;
                 }
             }
@@ -124,26 +122,5 @@ public class BaseInterceptor extends HandlerInterceptorAdapter {
             }
         }
         return needFilter;
-    }
-    /**
-     * 获取随机字母数字组合
-     *
-     * @param length
-     *            字符串长度
-     * @return
-     */
-    private static String getRandomCharAndNumr(Integer length) {
-        String str = "";
-        Random random = new Random();
-        for (int i = 0; i < length; i++) {
-            boolean b = random.nextBoolean();
-            if (b) { // 字符串
-                // int choice = random.nextBoolean() ? 65 : 97; 取得65大写字母还是97小写字母
-                str += (char) (65 + random.nextInt(26));// 取得大写字母
-            } else { // 数字
-                str += String.valueOf(random.nextInt(10));
-            }
-        }
-        return str;
     }
 }
