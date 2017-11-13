@@ -18,6 +18,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -104,6 +105,16 @@ public class LoginController {
         }
     }
 
+    @RequestMapping("/api/getUserInfo")
+    @ResponseBody
+    public BaseResult<CustDto> getUserInfo(HttpServletRequest request, HttpServletResponse response, String targetUrl) {
+        CustDto custDto = CookieUtil.getCust(request);
+        if(custDto==null){
+            return new BaseResult<>(BaseConstant.FAILED, "未登录");
+        }
+        return new BaseResult<>(custDto);
+    }
+
     private UserAccessToken testUserAccessToken() {
         UserAccessToken accessToken = new UserAccessToken();
         accessToken.setAccess_token("asglujwlkrntjkfnvuifd233465gdfkjgds");
@@ -166,9 +177,9 @@ public class LoginController {
 
     private void setUserCookie(HttpServletResponse response, String token, CustDto custDto) {
         CookieUtil.setCookie(response, BaseConstant.USER_COOKIE_NAME, token);
-        if(custDto!=null) {
+        /*if(custDto!=null) {
             CookieUtil.setCookie(response, token + "_userInfo", custDto);
-        }
+        }*/
     }
 
     /**
