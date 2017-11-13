@@ -39,6 +39,14 @@
                                 <value>DisableCircularReferenceDetect</value>
                             </list>
                         </property>
+                        <property name="serializerFeatures">
+                            <list>
+                                <value>WriteMapNullValue</value>
+                                <value>WriteNullListAsEmpty</value>
+                                <value>WriteNullStringAsEmpty</value>
+                                <value>WriteNullBooleanAsFalse</value>
+                            </list>
+                        </property>
                         <property name="dateFormat" value="yyyy-MM-dd HH:mm:ss"></property>
                     </bean>
                 </property>

@@ -2,16 +2,28 @@ package org.loxf.jyapi.web;
 
 import org.loxf.jyadmin.base.bean.BaseResult;
 import org.loxf.jyadmin.client.dto.CustBankDto;
+import org.loxf.jyadmin.client.service.AccountDetailService;
+import org.loxf.jyadmin.client.service.AccountService;
+import org.loxf.jyapi.util.CookieUtil;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import javax.servlet.http.HttpServletRequest;
+
 @Controller
 public class AccountController {
+    @Autowired
+    private AccountService accountService;
+    @Autowired
+    private AccountDetailService accountDetailService;
+
     @ResponseBody
     @RequestMapping("/api/account/init")
-    public BaseResult init(){
-        return new BaseResult();
+    public BaseResult init(HttpServletRequest request){
+        String custId = CookieUtil.getCustId(request);
+        return accountService.queryBasicInfo(custId);
     }
     @ResponseBody
     @RequestMapping("/api/account/cashList")

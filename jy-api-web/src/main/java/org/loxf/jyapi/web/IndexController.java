@@ -51,7 +51,7 @@ public class IndexController {
         FriendLinkDto friendLinkDto = new FriendLinkDto();
         friendLinkDto.setStatus(1);
         PageResult<FriendLinkDto> friendLinkDtoPageResult = friendLinkService.queryAllLink(friendLinkDto, 1, 100);
-        if(friendLinkDtoPageResult.getCode()== BaseConstant.SUCCESS && friendLinkDtoPageResult.getData()!=null){
+        if(friendLinkDtoPageResult.getCode()== BaseConstant.SUCCESS){
             result.put("friendLink", friendLinkDtoPageResult.getData());
         }
         // 是否签到
@@ -99,6 +99,9 @@ public class IndexController {
     @RequestMapping("/api/cust/beAgent")
     @ResponseBody
     public BaseResult beAgent(HttpServletRequest request, String province, String city, String realName, String phone, String email, Integer type){
+        if(type==null || type>3 || type<1 || StringUtils.isBlank(realName) || StringUtils.isBlank(phone)){
+            return new BaseResult(BaseConstant.FAILED, "参数不正确");
+        }
         CustDto custDto = CookieUtil.getCust(request);
         AgentInfoDto dto = new AgentInfoDto();
         BeanUtils.copyProperties(custDto, dto);
@@ -122,6 +125,12 @@ public class IndexController {
     @RequestMapping("/api/offer/list")
     @ResponseBody
     public PageResult<JSONObject> offerList(String catalogId, String filter, String sortType, Integer page, Integer size){
+        if(page==null){
+            page = 1;
+        }
+        if(size==null){
+            page = 10;
+        }
         OfferDto offerDto = new OfferDto();
         Pager pager = new Pager(page, size);
         offerDto.setPager(pager);
@@ -134,9 +143,9 @@ public class IndexController {
             }
         }
         if(StringUtils.isNotBlank(sortType) && sortType.equals("HOT")){
-            //TODO 热门怎么处理？
+            offerDto.setSortType("HOT");
         }
-        PageResult<OfferDto> offerDtoPageResult = offerService.pager(offerDto);
+        PageResult<OfferDto> offerDtoPageResult = offerService.pager(offerDto, 2);
         List<JSONObject> list = new ArrayList<>();
         if(offerDtoPageResult.getTotal()>0){
             for(OfferDto tmp : offerDtoPageResult.getData()){
@@ -175,8 +184,56 @@ public class IndexController {
      */
     @RequestMapping("/api/active/list")
     @ResponseBody
-    public BaseResult activeList(Integer page, Integer size){
-        return new BaseResult();
+    public PageResult activeList(Integer page, Integer size){
+        if (page == null) {
+            page=1;
+        }
+        if (size == null) {
+            size=10;
+        }
+        ActiveDto activeDto = new ActiveDto();
+        Pager pager = new Pager(page, size);
+        activeDto.setPager(pager);
+        PageResult<ActiveDto> pageResult = activeService.pager(activeDto);
+        List<JSONObject> result = new ArrayList<>();
+        if(pageResult.getTotal()>0) {
+            List<ActiveDto> list = pageResult.getData();
+            for(ActiveDto dto : list){
+                JSONObject jsonObject = new JSONObject();
+                jsonObject.put("activeEndTime", DateUtils.format(dto.getActiveEndTime()));
+                jsonObject.put("activeStartTime", DateUtils.format(dto.getActiveStartTime()));
+                jsonObject.put("activeId", dto.getActiveId());
+                jsonObject.put("activeName", dto.getActiveName());
+                jsonObject.put("addr", dto.getAddr());
+                jsonObject.put("pic", dto.getPic());
+                // 0：无，1：免费 2：VIP免费 3：SVIP免费
+                String activePrivi = dto.getActivePrivi();
+                JSONObject priviJson = JSON.parseObject(activePrivi);
+                if(priviJson.containsKey("NONE") && priviJson.getIntValue("NONE")==0) {
+                    jsonObject.put("vipFlag", 1);
+                } else if(priviJson.containsKey("VIP") && priviJson.getIntValue("VIP")==0) {
+                    jsonObject.put("vipFlag", 2);
+                } else if(priviJson.containsKey("SVIP") && priviJson.getIntValue("SVIP")==0) {
+                    jsonObject.put("vipFlag", 3);
+                } else {
+                    jsonObject.put("vipFlag", 0);
+                }
+                // 活动状态 0:进行中 1:即将开始 2:报名中 3:已经结束
+                long startTime = dto.getActiveStartTime().getTime();
+                int status = 0;
+                if(startTime-System.currentTimeMillis()>48*60*60*1000){
+                    // 48小时前叫报名中
+                    status = 2;
+                } else if(startTime-System.currentTimeMillis()<48*60*60*1000 && startTime-System.currentTimeMillis()>0){
+                    status = 1;
+                } else if(dto.getActiveEndTime().getTime()-System.currentTimeMillis()<0){
+                    status = 3;
+                }
+                jsonObject.put("activeStatus", status);
+                result.add(jsonObject);
+            }
+        }
+        return new PageResult(pageResult.getTotalPage(), pageResult.getCurrentPage(), pageResult.getTotal(), result);
     }
 
     /**
@@ -185,7 +242,24 @@ public class IndexController {
      */
     @RequestMapping("/api/offer/catalog")
     @ResponseBody
-    public BaseResult offerCatalogList(int size){
-        return new BaseResult();
+    public PageResult offerCatalogList(Integer size){
+        if(size==null){
+            size = 10;
+        }
+        OfferCatalogDto dto = new OfferCatalogDto();
+        dto.setPager(new Pager(1, size));
+        PageResult<OfferCatalogDto> pageResult = offerCatalogService.pager(dto);
+        List<JSONObject> list = new ArrayList<>();
+        if(pageResult.getTotal()>0){
+            for(OfferCatalogDto tmp : pageResult.getData()) {
+                JSONObject json = new JSONObject();
+                json.put("catalogId", tmp.getCatalogId());
+                json.put("catalogName", tmp.getCatalogName());
+                json.put("pic", tmp.getPic());
+                list.add(json);
+            }
+            return new PageResult(pageResult.getTotalPage(), pageResult.getCurrentPage(), pageResult.getTotal() ,list);
+        }
+        return pageResult;
     }
 }
