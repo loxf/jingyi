@@ -167,7 +167,7 @@ public class LoginController {
     private void setUserCookie(HttpServletResponse response, String token, CustDto custDto) {
         CookieUtil.setCookie(response, BaseConstant.USER_COOKIE_NAME, token);
         if(custDto!=null) {
-            CookieUtil.setCookie(response, token + "_userInfo", JSON.toJSONString(custDto));
+            CookieUtil.setCookie(response, token + "_userInfo", custDto);
         }
     }
 

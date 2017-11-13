@@ -20,6 +20,7 @@ public class CookieUtil {
 
     public static void setCookie(HttpServletResponse response, String cookieName, Object value) {
         Cookie cookie = new Cookie(cookieName, JSONObject.toJSONString(value));
+        cookie.setDomain("jingyizaixian.com");
         cookie.setPath("/");
         cookie.setMaxAge(24 * 60 * 60);
         response.addCookie(cookie);
