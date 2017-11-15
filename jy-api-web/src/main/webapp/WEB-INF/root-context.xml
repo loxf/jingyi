@@ -82,6 +82,14 @@
         <constructor-arg index="4" value="${redis.passwd}"/>
     </bean>
 
+    <bean id="configProperties" class="org.springframework.beans.factory.config.PropertiesFactoryBean">
+        <property name="properties">
+            <map>
+                <entry key="SYSTEM.DEBUG" value="${SYSTEM.DEBUG}"></entry>
+            </map>
+        </property>
+    </bean>
+
     <import resource="spring/dubbo.xml"/>
     <import resource="classpath*:jy-admin-base.xml"/>
 </beans>

@@ -44,7 +44,7 @@ public class LoginController {
             if ("JY123456QWE".equals(request.getParameter("XDebug"))) {
                 loginUrl = String.format(BaseConstant.LOGIN_URL, URLEncoder.encode(targetUrl, "utf-8")) + "&state=" + code + "&XDebug=IYUTERESGBXVCMSWB";
                 if ("L".equals(request.getParameter("LOCATION"))) {
-                    loginUrl = loginUrl.replaceAll("https://api.jingyizaixian.com", "http://127.0.0.1:8081");
+                    loginUrl = loginUrl.replaceAll("https://www.jingyizaixian.com", "http://127.0.0.1:8081");
                 }
             }
             jedisUtil.set(code, (System.currentTimeMillis() + 5 * 60 * 1000) + "", 5 * 60);
