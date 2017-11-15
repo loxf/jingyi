@@ -3,15 +3,18 @@ package org.loxf.jyapi.interceptor;
 import com.alibaba.fastjson.JSON;
 import org.apache.commons.lang3.StringUtils;
 import org.loxf.jyadmin.base.constant.BaseConstant;
+import org.loxf.jyadmin.base.exception.BizException;
 import org.loxf.jyadmin.base.util.JedisUtil;
 import org.loxf.jyadmin.base.util.SpringApplicationContextUtil;
 import org.loxf.jyadmin.client.dto.CustDto;
 import org.loxf.jyadmin.client.service.ConfigService;
+import org.loxf.jyapi.exception.NotLoginException;
 import org.loxf.jyapi.util.CookieUtil;
 import org.loxf.jyadmin.base.bean.BaseResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 
@@ -24,13 +27,16 @@ public class BaseInterceptor extends HandlerInterceptorAdapter {
     private static String [] excludeUrl = {"/api/login", "/api/loginByWx"};
     @Autowired
     private ConfigService configService;
+    @Value("#{configProperties['SYSTEM.DEBUG']}")
+    private Boolean debug;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        request.setAttribute("basePic",
-                configService.queryConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "PIC_SERVER_URL").getData().getConfigValue());
-        response.setHeader("Access-Control-Allow-Origin","*");
-        response.setHeader("Access-Control-Allow-Methods","POST,GET,OPTIONS");
+        try {
+            setResponse(request, response);
+        } catch (Exception e){
+            logger.error("拦截器设置response失败", e);
+        }
         // 判断用户是否登录系统
         if(needFilter(request.getRequestURI())) {
             if (!hasLogin(request, response)) {
@@ -51,15 +57,20 @@ public class BaseInterceptor extends HandlerInterceptorAdapter {
         if (null == ex) {
             return;
         }
-        logger.error("系统异常", ex);
-        this.writeResult(response, new BaseResult(BaseConstant.FAILED, "系统异常，请联系客服"));
+        if(ex instanceof NotLoginException){
+            this.writeResult(response, new BaseResult(BaseConstant.NOT_LOGIN, ex.getMessage()));
+        } else if(ex instanceof BizException){
+            logger.error("业务异常", ex);
+            this.writeResult(response, new BaseResult(BaseConstant.FAILED, ex.getMessage()));
+        } else {
+            logger.error("系统异常", ex);
+            this.writeResult(response, new BaseResult(BaseConstant.FAILED, "系统异常，请联系客服"));
+        }
     }
 
     private void writeResult(HttpServletResponse response, BaseResult baseResult) {
         PrintWriter writer = null;
         try {
-            response.setHeader("Content-type", "text/html;charset=UTF-8");
-            response.setCharacterEncoding("UTF-8");
             writer = response.getWriter();
             writer.write(JSON.toJSONString(baseResult));
             writer.flush();
@@ -76,7 +87,20 @@ public class BaseInterceptor extends HandlerInterceptorAdapter {
         // 获取用户token
         String token = CookieUtil.getUserToken(request);
         if(StringUtils.isBlank(token)){
-            return false;
+            if(debug!=null && debug){
+                //TODO 关闭调试模式
+                token = request.getParameter(BaseConstant.USER_COOKIE_NAME);
+                logger.warn("调试模式获取的token:" + token);
+                if(StringUtils.isBlank(token)){
+                    return false;
+                } else {
+                    // 反写session cookie
+                    CookieUtil.setSession(request, BaseConstant.USER_COOKIE_NAME, token);
+                    CookieUtil.setCookie(response, BaseConstant.USER_COOKIE_NAME, token);
+                }
+            } else {
+                return false;
+            }
         }
         try {
             // 用户已经登录
@@ -122,5 +146,17 @@ public class BaseInterceptor extends HandlerInterceptorAdapter {
             }
         }
         return needFilter;
+    }
+
+    private void setResponse(HttpServletRequest request, HttpServletResponse response){
+        request.setAttribute("basePic",
+                configService.queryConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "PIC_SERVER_URL").getData().getConfigValue());
+
+        response.setHeader("Access-Control-Allow-Origin","*");
+        response.setHeader("Access-Control-Allow-Methods","GET, POST, PUT, DELETE, OPTIONS");
+        response.setHeader("Access-Control-Allow-Headers","Origin, X-Requested-With, Content-Type, Accept, Cookie");
+        response.setHeader("Access-Control-Allow-Credentials", "true");
+        response.setHeader("Content-type", "application/json;charset=UTF-8");
+        response.setCharacterEncoding("UTF-8");
     }
 }

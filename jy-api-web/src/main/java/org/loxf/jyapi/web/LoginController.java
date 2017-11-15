@@ -1,9 +1,9 @@
 package org.loxf.jyapi.web;
 
 import com.alibaba.fastjson.JSON;
-import org.apache.commons.lang3.StringUtils;
 import org.loxf.jyadmin.base.bean.BaseResult;
 import org.loxf.jyadmin.base.constant.BaseConstant;
+import org.loxf.jyadmin.base.exception.BizException;
 import org.loxf.jyadmin.base.util.JedisUtil;
 import org.loxf.jyadmin.base.util.weixin.WeixinUtil;
 import org.loxf.jyadmin.base.util.weixin.bean.UserAccessToken;
@@ -69,8 +69,8 @@ public class LoginController {
         if (jedisUtil.exists(state)) {
             String expireTime = jedisUtil.get(state);
             if (System.currentTimeMillis() - Long.parseLong(expireTime) > 0) {
-                // TODO 跳转错误页面：登录校验码失效
                 logger.info("登录校验码失效");
+                throw new BizException("登录校验码失效");
             } else {
                 // 登录成功
                 // 请求用户信息
@@ -100,19 +100,15 @@ public class LoginController {
             }
             jedisUtil.del(state);
         } else {
-            // TODO 跳转错误页面：登录校验码不存在
             logger.info("登录校验码不存在");
+            throw new BizException("登录校验码不存在");
         }
     }
 
     @RequestMapping("/api/getUserInfo")
     @ResponseBody
     public BaseResult<CustDto> getUserInfo(HttpServletRequest request, HttpServletResponse response, String targetUrl) {
-        CustDto custDto = CookieUtil.getCust(request);
-        if(custDto==null){
-            return new BaseResult<>(BaseConstant.FAILED, "未登录");
-        }
-        return new BaseResult<>(custDto);
+        return new BaseResult<>(CookieUtil.getCust(request));
     }
 
     private UserAccessToken testUserAccessToken() {
@@ -168,18 +164,15 @@ public class LoginController {
             // 设置cookie session token
             CookieUtil.setSession(request, BaseConstant.USER_COOKIE_NAME, token);
             jedisUtil.set(token, JSON.toJSONString(custInfo), expireSecond);
-            setUserCookie(response, token, custInfo);
+            setUserCookie(response, token);
         } catch (Exception e) {
             logger.error("TOKEN加密失败", e);
         }
         return custInfo;
     }
 
-    private void setUserCookie(HttpServletResponse response, String token, CustDto custDto) {
+    private void setUserCookie(HttpServletResponse response, String token) {
         CookieUtil.setCookie(response, BaseConstant.USER_COOKIE_NAME, token);
-        /*if(custDto!=null) {
-            CookieUtil.setCookie(response, token + "_userInfo", custDto);
-        }*/
     }
 
     /**

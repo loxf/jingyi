@@ -18,7 +18,7 @@
                 <constructor-arg value="UTF-8"/>
                 <property name = "supportedMediaTypes">
                     <list>
-                        <value>text/html;charset=UTF-8</value>
+                        <!--<value>text/html;charset=UTF-8</value>-->
                         <value>application/json;charset=UTF-8</value>
                     </list>
                 </property>
@@ -26,7 +26,7 @@
             <bean class="com.alibaba.fastjson.support.spring.FastJsonHttpMessageConverter4">
                 <property name="supportedMediaTypes">
                     <list>
-                        <value>text/html;charset=UTF-8</value>
+                        <!--<value>text/html;charset=UTF-8</value>-->
                         <value>application/json;charset=UTF-8</value>
                     </list>
                 </property>
