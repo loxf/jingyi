@@ -19,8 +19,8 @@ public class CookieUtil {
     public static String TOKEN_PREFIX = "JY_USER";
     public static String TOKEN_SPLIT = "#JY#";
 
-    public static void setCookie(HttpServletResponse response, String cookieName, Object value) {
-        Cookie cookie = new Cookie(cookieName, JSONObject.toJSONString(value));
+    public static void setCookie(HttpServletResponse response, String cookieName, String value) {
+        Cookie cookie = new Cookie(cookieName, value);
         cookie.setDomain("jingyizaixian.com");
         cookie.setPath("/");
         cookie.setMaxAge(24 * 60 * 60);
