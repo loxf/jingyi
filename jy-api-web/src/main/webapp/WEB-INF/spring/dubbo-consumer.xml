@@ -78,4 +78,7 @@
     <dubbo:reference timeout="${dubbo.client.timeout}" version="${dubbo.client.version}"
                      interface="org.loxf.jyadmin.client.service.IndexRecommendService" id="indexRecommendService"/>
 
+    <dubbo:reference timeout="${dubbo.client.timeout}" version="${dubbo.client.version}"
+                     interface="org.loxf.jyadmin.client.service.VerifyCodeService" id="verifyCodeService"/>
+
 </beans>

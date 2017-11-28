@@ -107,7 +107,7 @@ public class LoginController {
 
     @RequestMapping("/api/getUserInfo")
     @ResponseBody
-    public BaseResult<CustDto> getUserInfo(HttpServletRequest request, HttpServletResponse response, String targetUrl) {
+    public BaseResult<CustDto> getUserInfo(HttpServletRequest request, HttpServletResponse response) {
         return new BaseResult<>(CookieUtil.getCust(request));
     }
 

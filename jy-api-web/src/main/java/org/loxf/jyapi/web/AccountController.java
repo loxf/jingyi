@@ -1,14 +1,16 @@
 package org.loxf.jyapi.web;
 
+import com.alibaba.fastjson.JSONObject;
+import org.apache.commons.lang3.StringUtils;
 import org.loxf.jyadmin.base.bean.BaseResult;
 import org.loxf.jyadmin.base.bean.PageResult;
 import org.loxf.jyadmin.base.bean.Pager;
+import org.loxf.jyadmin.base.constant.BaseConstant;
 import org.loxf.jyadmin.client.dto.AccountDetailDto;
 import org.loxf.jyadmin.client.dto.CustBankDto;
 import org.loxf.jyadmin.client.dto.CustCashDto;
-import org.loxf.jyadmin.client.service.AccountDetailService;
-import org.loxf.jyadmin.client.service.AccountService;
-import org.loxf.jyadmin.client.service.CustCashService;
+import org.loxf.jyadmin.client.dto.CustDto;
+import org.loxf.jyadmin.client.service.*;
 import org.loxf.jyapi.util.CookieUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -25,21 +27,27 @@ public class AccountController {
     private AccountDetailService accountDetailService;
     @Autowired
     private CustCashService custCashService;
+    @Autowired
+    private CustBankService custBankService;
 
     @ResponseBody
     @RequestMapping("/api/account/init")
-    public BaseResult init(HttpServletRequest request){
-        String custId = CookieUtil.getCustId(request);
-        return accountService.queryBasicInfo(custId);
+    public BaseResult init(HttpServletRequest request) {
+        CustDto custDto = CookieUtil.getCust(request);
+        BaseResult<JSONObject> basicInfo = accountService.queryBasicInfo(custDto.getCustId());
+        basicInfo.getData().put("isBindUser", custDto.getIsChinese()!=null &&
+                (StringUtils.isNotBlank(custDto.getPhone())||StringUtils.isNotBlank(custDto.getEmail())));
+        return basicInfo;
     }
+
     @ResponseBody
     @RequestMapping("/api/account/cashList")
-    public PageResult cashList(HttpServletRequest request, Integer page, Integer size){
+    public PageResult cashList(HttpServletRequest request, Integer page, Integer size) {
         String custId = CookieUtil.getCustId(request);
-        if(page==null || page<=0){
+        if (page == null || page <= 0) {
             page = 1;
         }
-        if(size==null || size<0){
+        if (size == null || size < 0) {
             size = 10;
         }
         CustCashDto dto = new CustCashDto();
@@ -57,12 +65,12 @@ public class AccountController {
      */
     @ResponseBody
     @RequestMapping("/api/account/Detail")
-    public PageResult accountDetail(HttpServletRequest request, Integer page, Integer size, Integer type){
+    public PageResult accountDetail(HttpServletRequest request, Integer page, Integer size, Integer type) {
         String custId = CookieUtil.getCustId(request);
-        if(page==null || page<=0){
+        if (page == null || page <= 0) {
             page = 1;
         }
-        if(size==null || size<=0){
+        if (size == null || size <= 0) {
             size = 10;
         }
         AccountDetailDto accountDetailDto = new AccountDetailDto();
@@ -71,14 +79,28 @@ public class AccountController {
         accountDetailDto.setPager(new Pager(page, size));
         return accountDetailService.queryDetails(accountDetailDto);
     }
+
     @ResponseBody
     @RequestMapping("/api/account/bindBankcard")
-    public BaseResult bindBankcard(CustBankDto dto){
-        return new BaseResult();
+    public BaseResult bindBankcard(HttpServletRequest request, CustBankDto dto) {
+        if (dto == null) {
+            return new BaseResult(BaseConstant.FAILED, "参数为空");
+        }
+        String custId = CookieUtil.getCustId(request);
+        if (StringUtils.isBlank(dto.getBank()) || StringUtils.isBlank(dto.getBankNo()) || StringUtils.isBlank(dto.getPhone())
+                || StringUtils.isBlank(dto.getUserName())) {
+            return new BaseResult(BaseConstant.FAILED, "参数不全");
+        }
+        dto.setCustId(custId);
+        return custBankService.addBankCard(dto);
     }
+
     @ResponseBody
     @RequestMapping("/api/account/setPayPassword")
-    public BaseResult setPayPassword(String email, String phone, int isChinese, String password, String verifyCode){
-        return new BaseResult();
+    public BaseResult setPayPassword(HttpServletRequest request, String password, String verifyCode) {
+        CustDto cust = CookieUtil.getCust(request);
+        BaseResult baseResult1 = accountService.setPayPassword(cust.getCustId(), cust.getEmail(),
+                cust.getPhone(), cust.getIsChinese(), password, verifyCode);
+        return baseResult1;
     }
 }
