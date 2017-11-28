@@ -1,6 +1,7 @@
 package org.loxf.jyapi.web;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import org.loxf.jyadmin.base.bean.BaseResult;
 import org.loxf.jyadmin.base.bean.PageResult;
 import org.loxf.jyadmin.base.constant.BaseConstant;
@@ -9,7 +10,9 @@ import org.loxf.jyadmin.base.util.JedisUtil;
 import org.loxf.jyadmin.base.util.weixin.WeixinUtil;
 import org.loxf.jyadmin.base.util.weixin.bean.UserAccessToken;
 import org.loxf.jyadmin.base.util.weixin.bean.WXUserInfo;
+import org.loxf.jyadmin.client.dto.AccountDto;
 import org.loxf.jyadmin.client.dto.CustDto;
+import org.loxf.jyadmin.client.service.AccountService;
 import org.loxf.jyadmin.client.service.CustService;
 import org.loxf.jyapi.util.CookieUtil;
 import org.slf4j.Logger;
@@ -33,6 +36,8 @@ public class CustController {
     private JedisUtil jedisUtil;
     @Autowired
     private CustService custService;
+    @Autowired
+    private AccountService accountService;
     /**
      * 初始化接口
      * @return
@@ -40,9 +45,17 @@ public class CustController {
     @RequestMapping("/api/cust/init")
     @ResponseBody
     public BaseResult init(HttpServletRequest request){
-
-        return new BaseResult();
+        CustDto custDto = CookieUtil.getCust(request);
+        BaseResult<JSONObject> accountDtoBaseResult = accountService.queryAccount(custDto.getCustId());
+        JSONObject jsonObject = accountDtoBaseResult.getData();
+        jsonObject.put("email", custDto.getEmail());
+        jsonObject.put("isChinese", custDto.getIsChinese());
+        jsonObject.put("nickName", custDto.getNickName());
+        jsonObject.put("phone", custDto.getPhone());
+        jsonObject.put("pic", custDto.getHeadImgUrl());
+        return accountDtoBaseResult;
     }
+
     /**
      * 我的同学
      * @param type 1:直接同学 2：间接同学
