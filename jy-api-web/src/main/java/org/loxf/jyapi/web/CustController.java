@@ -46,6 +46,8 @@ public class CustController {
     private VerifyCodeService verifyCodeService;
     @Autowired
     private OrderService orderService;
+    @Autowired
+    private CustBpDetailService custBpDetailService;
 
     /**
      * 初始化接口
@@ -161,8 +163,9 @@ public class CustController {
      */
     @RequestMapping("/api/bp/rankingList")
     @ResponseBody
-    public BaseResult rankingList(HttpServletRequest request) {
-        return new BaseResult();
+    public BaseResult<JSONObject> rankingList(HttpServletRequest request) {
+        String custId = CookieUtil.getCustId(request);
+        return accountService.queryBpRankingList(custId);
     }
 
     /**
@@ -173,8 +176,13 @@ public class CustController {
      */
     @RequestMapping("/api/cust/bpDetail")
     @ResponseBody
-    public BaseResult bpDetail(HttpServletRequest request, Integer page, Integer size, Integer type) {
-        return new BaseResult();
+    public PageResult<CustBpDetailDto> bpDetail(HttpServletRequest request, Integer page, Integer size, Integer type) {
+        String custId = CookieUtil.getCustId(request);
+        CustBpDetailDto custBpDetailDto = new CustBpDetailDto();
+        custBpDetailDto.setType(type);
+        custBpDetailDto.setCustId(custId);
+        custBpDetailDto.setPager(new Pager(page, size));
+        return custBpDetailService.pager(custBpDetailDto);
     }
 
     /**
