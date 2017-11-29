@@ -5,7 +5,6 @@ import org.loxf.jyadmin.base.bean.BaseResult;
 import org.loxf.jyadmin.base.constant.BaseConstant;
 import org.loxf.jyadmin.client.dto.CustDto;
 import org.loxf.jyadmin.client.service.VerifyCodeService;
-import org.loxf.jyapi.util.ConfigUtil;
 import org.loxf.jyapi.util.CookieUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -25,7 +24,7 @@ public class SendMsgController {
      */
     @ResponseBody
     @RequestMapping("/api/sendMsg")
-    public BaseResult sendMsg(HttpServletRequest request, String obj, int type){
+    public BaseResult sendMsg(HttpServletRequest request, String obj, Integer type){
         CustDto cust = CookieUtil.getCust(request);
         if(StringUtils.isBlank(obj)){
             Integer isChinese = cust.getIsChinese();

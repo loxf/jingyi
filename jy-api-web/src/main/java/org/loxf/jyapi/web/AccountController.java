@@ -35,8 +35,10 @@ public class AccountController {
     public BaseResult init(HttpServletRequest request) {
         CustDto custDto = CookieUtil.getCust(request);
         BaseResult<JSONObject> basicInfo = accountService.queryBasicInfo(custDto.getCustId());
-        basicInfo.getData().put("isBindUser", custDto.getIsChinese()!=null &&
-                (StringUtils.isNotBlank(custDto.getPhone())||StringUtils.isNotBlank(custDto.getEmail())));
+        if(basicInfo.getCode()==BaseConstant.SUCCESS) {
+            basicInfo.getData().put("isBindUser", custDto.getIsChinese() != null &&
+                    (StringUtils.isNotBlank(custDto.getPhone()) || StringUtils.isNotBlank(custDto.getEmail())));
+        }
         return basicInfo;
     }
 

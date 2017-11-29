@@ -12,10 +12,7 @@ import org.loxf.jyadmin.base.util.JedisUtil;
 import org.loxf.jyadmin.base.util.weixin.WeixinUtil;
 import org.loxf.jyadmin.base.util.weixin.bean.UserAccessToken;
 import org.loxf.jyadmin.base.util.weixin.bean.WXUserInfo;
-import org.loxf.jyadmin.client.dto.AccountDto;
-import org.loxf.jyadmin.client.dto.ActiveCustListDto;
-import org.loxf.jyadmin.client.dto.ActiveDto;
-import org.loxf.jyadmin.client.dto.CustDto;
+import org.loxf.jyadmin.client.dto.*;
 import org.loxf.jyadmin.client.service.*;
 import org.loxf.jyapi.util.CookieUtil;
 import org.slf4j.Logger;
@@ -47,6 +44,8 @@ public class CustController {
     private ActiveCustService activeCustService;
     @Autowired
     private VerifyCodeService verifyCodeService;
+    @Autowired
+    private OrderService orderService;
 
     /**
      * 初始化接口
@@ -145,8 +144,14 @@ public class CustController {
      */
     @RequestMapping("/api/cust/myorder")
     @ResponseBody
-    public BaseResult myorder(HttpServletRequest request) {
-        return new BaseResult();
+    public PageResult myorder(HttpServletRequest request, Integer page, Integer size) {
+        String custId = CookieUtil.getCustId(request);
+        OrderDto custDto = new OrderDto();
+        Pager pager = new Pager(page, size);
+        custDto.setPager(pager);
+        custDto.setCustId(custId);
+        PageResult<OrderDto> pageResult = orderService.pager(custDto);
+        return pageResult;
     }
 
     /**
