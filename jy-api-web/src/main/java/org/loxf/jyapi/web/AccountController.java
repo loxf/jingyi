@@ -98,6 +98,26 @@ public class AccountController {
     }
 
     @ResponseBody
+    @RequestMapping("/api/account/unbindBankcard")
+    public BaseResult bindBankcard(HttpServletRequest request, String cardId) {
+        if (StringUtils.isBlank(cardId )) {
+            return new BaseResult(BaseConstant.FAILED, "参数为空");
+        }
+        return custBankService.unBind(cardId);
+    }
+
+    @ResponseBody
+    @RequestMapping("/api/account/cardList")
+    public PageResult<CustBankDto> cardList(HttpServletRequest request, Integer page, Integer size) {
+        String custId = CookieUtil.getCustId(request);
+        CustBankDto custBankDto = new CustBankDto();
+        custBankDto.setCustId(custId);
+        custBankDto.setStatus(1);
+        custBankDto.setPager(new Pager(page, size));
+        return custBankService.pager(custBankDto);
+    }
+
+    @ResponseBody
     @RequestMapping("/api/account/setPayPassword")
     public BaseResult setPayPassword(HttpServletRequest request, String password, String verifyCode) {
         CustDto cust = CookieUtil.getCust(request);
