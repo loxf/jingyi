@@ -104,8 +104,8 @@ public class CustController {
             List<ActiveCustListDto> list = pageResult.getData();
             for(ActiveCustListDto dto : list){
                 JSONObject jsonObject = new JSONObject();
-                jsonObject.put("activeEndTime", DateUtils.format(dto.getActiveEndTime()));
-                jsonObject.put("activeStartTime", DateUtils.format(dto.getActiveStartTime()));
+                jsonObject.put("activeEndTime", DateUtils.formatHms(dto.getActiveEndTime()));
+                jsonObject.put("activeStartTime", DateUtils.formatHms(dto.getActiveStartTime()));
                 jsonObject.put("activeId", dto.getActiveId());
                 jsonObject.put("activeName", dto.getActiveName());
                 jsonObject.put("addr", dto.getAddr());
