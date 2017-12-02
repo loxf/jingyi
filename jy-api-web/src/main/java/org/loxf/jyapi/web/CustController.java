@@ -48,6 +48,8 @@ public class CustController {
     private OrderService orderService;
     @Autowired
     private CustBpDetailService custBpDetailService;
+    @Autowired
+    private WatchRecordService watchRecordService;
 
     /**
      * 初始化接口
@@ -223,7 +225,12 @@ public class CustController {
      */
     @RequestMapping("/api/cust/watchRecordList")
     @ResponseBody
-    public BaseResult watchRecordList(HttpServletRequest request, Integer page, Integer size) {
-        return new BaseResult();
+    public PageResult<WatchRecordDto> watchRecordList(HttpServletRequest request, Integer page, Integer size) {
+        String custId = CookieUtil.getCustId(request);
+        WatchRecordDto watchRecordDto = new WatchRecordDto();
+        watchRecordDto.setPager(new Pager(page, size));
+        watchRecordDto.setCustId(custId);
+
+        return watchRecordService.pager(watchRecordDto);
     }
 }
