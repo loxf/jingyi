@@ -7,14 +7,9 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.loxf.jyadmin.base.bean.BaseResult;
 import org.loxf.jyadmin.base.constant.BaseConstant;
-import org.loxf.jyadmin.client.dto.CustDto;
-import org.loxf.jyadmin.client.dto.OfferDto;
-import org.loxf.jyadmin.client.dto.PurchasedVideoDto;
-import org.loxf.jyadmin.client.dto.VideoConfigDto;
-import org.loxf.jyadmin.client.service.ActiveService;
-import org.loxf.jyadmin.client.service.OfferService;
-import org.loxf.jyadmin.client.service.PurchasedVideoService;
-import org.loxf.jyadmin.client.service.VideoConfigService;
+import org.loxf.jyadmin.base.util.DateUtils;
+import org.loxf.jyadmin.client.dto.*;
+import org.loxf.jyadmin.client.service.*;
 import org.loxf.jyapi.util.CookieUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -34,6 +29,10 @@ public class DetailController {
     private VideoConfigService videoConfigService;
     @Autowired
     private PurchasedVideoService purchasedVideoService;
+    @Autowired
+    private ActiveCustListService activeCustListService;
+    @Autowired
+    private ProvinceAndCityService provinceAndCityService;
 
     @RequestMapping("/api/offer/detail")
     @ResponseBody
@@ -127,13 +126,98 @@ public class DetailController {
     }
     @RequestMapping("/api/active/detail")
     @ResponseBody
-    public BaseResult activeDetail(String activeId){
-        return new BaseResult();
+    public BaseResult activeDetail(HttpServletRequest request, String activeId){
+        CustDto custDto = CookieUtil.getCust(request);
+        BaseResult<ActiveDto> activeDtoBaseResult = activeService.queryActive(activeId);
+        if(activeDtoBaseResult.getCode()== BaseConstant.FAILED){
+            return activeDtoBaseResult;
+        }
+        ActiveDto activeDto = activeDtoBaseResult.getData();
+        if(activeDto==null){
+            return new BaseResult(BaseConstant.FAILED, "活动不存在");
+        }
+        if(activeDto.getStatus()==0){
+            return new BaseResult(BaseConstant.FAILED, "活动未发布");
+        }
+        // 判断是套餐还是课程 商品类型 服务类型：VIP,  课程：CLASS, 套餐：OFFER
+        JSONObject result = new JSONObject();
+        // 基本信息
+        result.put("htmlId", activeDto.getHtmlId());
+        result.put("activeName", activeDto.getActiveName());
+        result.put("activeStartTime", DateUtils.formatHms(activeDto.getActiveStartTime()));
+        result.put("activeEndTime", DateUtils.formatHms(activeDto.getActiveEndTime()));
+        String province = activeDto.getProvince();
+        String provinceName = (String) provinceAndCityService.query("P", province).getData();
+        String city = activeDto.getCity();
+        String cityName = (String)provinceAndCityService.query("C", city).getData();
+        result.put("addr", (provinceName!=null?provinceName + "-":"") + (cityName!=null?cityName + ",":"") + activeDto.getAddr());
+        String metaData = activeDto.getMetaData();
+        if(StringUtils.isNotBlank(metaData)) {
+            JSONObject metaDataJson = JSON.parseObject(metaData);
+            Integer limit = metaDataJson.getInteger("LIMIT");
+            result.put("limit", limit==null?100:limit);//默认一百人
+        }
+        result.put("pic", activeDto.getPic());
+        // 判断活动是否已经加入
+        result.put("isJoin", activeCustListService.hasJoin(activeId, custDto.getCustId()));
+        // 页面展现按钮
+        JSONArray btns = new JSONArray();
+        String buyPriviStr = activeDto.getActivePrivi();
+        dealOfferBtn(custDto.getCustId(), custDto.getUserLevel(), activeId, buyPriviStr, btns);
+        result.put("btns", btns);
+        return new BaseResult(result);
     }
     @RequestMapping("/api/offerClass/detail")
     @ResponseBody
-    public BaseResult classDetail(String offerId){
-        return new BaseResult();
+    public BaseResult classDetail(HttpServletRequest request, String offerId){
+        CustDto custDto = CookieUtil.getCust(request);
+        BaseResult<OfferDto> offerDtoBaseResult = offerService.queryOffer(offerId);
+        if(offerDtoBaseResult.getCode()== BaseConstant.FAILED){
+            return offerDtoBaseResult;
+        }
+        OfferDto offerDto = offerDtoBaseResult.getData();
+        if(offerDto==null){
+            return new BaseResult(BaseConstant.FAILED, "课程不存在");
+        }
+        if(offerDto.getStatus()==0){
+            return new BaseResult(BaseConstant.FAILED, "课程已下架");
+        }
+        // 判断是套餐还是课程 商品类型 服务类型：VIP,  课程：CLASS, 套餐：OFFER
+        String type = offerDto.getOfferType();
+        if("CLASS".equals(type)){
+            JSONObject result = new JSONObject();
+            // 基本信息
+            result.put("htmlId", offerDto.getHtmlId());
+            result.put("offerName", offerDto.getOfferName());
+            // 页面展现按钮
+            JSONArray btns = new JSONArray();
+            String buyPriviStr = offerDto.getBuyPrivi();
+            // 判断视频是否可播放，获取页面展现的按钮 1/用户已购买此套餐，2/此套餐对VIP/SVIP用户免费
+            boolean canPlay = dealOfferBtn(custDto.getCustId(), custDto.getUserLevel(), offerId, buyPriviStr, btns);
+
+            result.put("isPlay", (canPlay?1:0));
+            result.put("btns", btns);
+            // 获取乐视视频ID
+            BaseResult<VideoConfigDto> videoConfigDtoBaseResult = videoConfigService.queryVideo(offerDto.getMainMedia());
+            if(videoConfigDtoBaseResult.getCode()==BaseConstant.FAILED || videoConfigDtoBaseResult.getData()==null){
+                return new BaseResult(BaseConstant.FAILED, "获取视频失败");
+            }
+            result.put("mainMedia", videoConfigDtoBaseResult.getData().getVideoOutId());
+            String metaDataStr = offerDto.getMetaData();
+            if(StringUtils.isNotBlank(metaDataStr)) {
+                JSONObject metaData = JSON.parseObject(metaDataStr);
+                if (metaData.containsKey("TEACHER")) {
+                    result.put("teacher", metaData.getJSONArray("TEACHER"));
+                } else {
+                    result.put("teacher", null);
+                }
+            } else {
+                result.put("teacher", null);
+            }
+            return new BaseResult(result);
+        } else {
+            return new BaseResult(BaseConstant.FAILED, "当前商品非课程");
+        }
     }
 
     private JSONObject createBtn(Integer click, String name, String offerId, String price){
@@ -150,7 +234,7 @@ public class DetailController {
         if(StringUtils.isBlank(buyPriviStr)){
             // 不能单独购买
             canPlay = false;
-            btns.add(createBtn(0, "套餐不能直接购买", offerId, null));
+            btns.add(createBtn(0, "不能直接购买", offerId, null));
         } else {
             // 可以购买
             JSONObject buyPrivi = JSON.parseObject(buyPriviStr);
