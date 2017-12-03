@@ -198,18 +198,16 @@ public class CustController {
     public BaseResult bindPhone(HttpServletRequest request, String email, String phone, Integer isChinese, String verifyCode) {
         CustDto custDto = CookieUtil.getCust(request);
         if(custDto.getIsChinese()==null) {
-            String target ;
-            if(isChinese==1){
-                target = phone;
-            } else {
-                target = email;
-            }
             BaseResult verifyResult = verifyCodeService.verify(custDto.getCustId(), verifyCode);
             if(verifyResult.getCode()==BaseConstant.SUCCESS) {
                 custDto.setIsChinese(isChinese);
                 custDto.setEmail(email);
                 custDto.setPhone(phone);
                 custService.updateCust(custDto);
+                // 刷新缓存
+                CustDto custInfo = custService.queryCustByCustId(custDto.getCustId()).getData();
+                String userToken = CookieUtil.getUserToken(request);
+                jedisUtil.set(userToken, JSON.toJSONString(custInfo), 60*60);
                 return new BaseResult();
             } else {
                 return new BaseResult(BaseConstant.FAILED, "验证码错误");

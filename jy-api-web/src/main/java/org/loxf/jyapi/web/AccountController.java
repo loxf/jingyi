@@ -118,6 +118,12 @@ public class AccountController {
     }
 
     @ResponseBody
+    @RequestMapping("/api/account/bankList")
+    public BaseResult<String[]> bankList() {
+        return custBankService.queryBankList();
+    }
+
+    @ResponseBody
     @RequestMapping("/api/account/setPayPassword")
     public BaseResult setPayPassword(HttpServletRequest request, String password, String verifyCode) {
         CustDto cust = CookieUtil.getCust(request);
