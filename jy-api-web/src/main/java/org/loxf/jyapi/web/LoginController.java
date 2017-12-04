@@ -89,7 +89,7 @@ public class LoginController {
                     if (wxUserInfo != null) {
                         CustDto custDto = settingUser(request, response, userAccessToken, wxUserInfo);
                         // TODO system log
-                        targetUrl = UrlUtil.inputURL(targetUrl, "recommend", custDto.getCustId());
+                        // targetUrl = UrlUtil.inputURL(targetUrl, "recommend", custDto.getCustId());
                         try {
                             response.sendRedirect(targetUrl);
                         } catch (IOException e) {
@@ -142,7 +142,6 @@ public class LoginController {
         custDto.setHeadImgUrl(wxUserInfo.getHeadimgurl());
         custDto.setNickName(wxUserInfo.getNickname());
         BaseResult<CustDto> baseResult = custService.queryCustByOpenId(wxUserInfo.getOpenid());
-        String custId = null;
         // 计算token失效时间
         int expireSecond = Integer.valueOf(userAccessToken.getExpires_in());
         userAccessToken.setExpires_in((expireSecond * 1000 + System.currentTimeMillis()) + "");
@@ -164,15 +163,16 @@ public class LoginController {
             // 设置cookie session token
             CookieUtil.setSession(request, BaseConstant.USER_COOKIE_NAME, token);
             jedisUtil.set(token, JSON.toJSONString(custInfo), expireSecond);
-            setUserCookie(response, token);
+            setUserCookie(response, token, custInfo.getCustId());
         } catch (Exception e) {
             logger.error("TOKEN加密失败", e);
         }
         return custInfo;
     }
 
-    private void setUserCookie(HttpServletResponse response, String token) {
+    private void setUserCookie(HttpServletResponse response, String token, String custId) {
         CookieUtil.setCookie(response, BaseConstant.USER_COOKIE_NAME, token);
+        CookieUtil.setCookie(response, BaseConstant.JY_CUST_ID, custId);
     }
 
     /**

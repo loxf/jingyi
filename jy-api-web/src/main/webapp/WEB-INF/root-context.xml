@@ -92,4 +92,5 @@
 
     <import resource="spring/dubbo.xml"/>
     <import resource="classpath*:jy-admin-base.xml"/>
+    <import resource="spring/job.xml"/>
 </beans>

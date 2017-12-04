@@ -23,12 +23,13 @@ public class VideoController {
      */
     @RequestMapping("/api/video/watch")
     @ResponseBody
-    public BaseResult watchRecord(HttpServletRequest request, String watchId, String videoId){
+    public BaseResult watchRecord(HttpServletRequest request, String watchId, String offerId, String videoId){
         String custId = CookieUtil.getCustId(request);
         WatchRecordDto watchRecordDto = new WatchRecordDto();
         watchRecordDto.setCustId(custId);
         watchRecordDto.setWatchId(watchId);
         watchRecordDto.setVideoId(videoId);
+        watchRecordDto.setOfferId(offerId);
         return watchRecordService.watch(watchRecordDto);
     }
 }

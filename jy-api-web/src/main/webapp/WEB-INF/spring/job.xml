@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd">
+    <!-- 启动JOB -->
+    <bean class="org.loxf.jyapi.thread.JOBStart" init-method="init">
+        <constructor-arg name="jobList">
+            <list>
+                <ref bean="wxAccessTokenFreshJob"></ref>
+            </list>
+        </constructor-arg>
+    </bean>
+    <!-- JOB -->
+    <bean id="wxAccessTokenFreshJob" class="org.loxf.jyapi.thread.WxAccessTokenFreshJob">
+        <constructor-arg name="expireLockMSecd" value="10" /><!-- 锁失效时间 -->
+        <constructor-arg name="lockTimeout" value="10" /><!-- 获取锁的等待时间 -->
+        <constructor-arg name="period" value="60000" /><!-- 业务执行间隔时间 milliseconds -->
+    </bean>
+</beans>

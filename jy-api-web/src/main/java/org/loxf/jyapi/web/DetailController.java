@@ -34,6 +34,12 @@ public class DetailController {
     @Autowired
     private ProvinceAndCityService provinceAndCityService;
 
+    private static String CANNOT_BUY = "CANNOT_BUY";
+    private static String BUY_NOW = "BUY_NOW";
+    private static String SHARE_FRIEND = "SHARE_FRIEND";
+    private static String BE_VIP = "BE_VIP";
+    private static String BE_SVIP = "BE_SVIP";
+
     @RequestMapping("/api/offer/detail")
     @ResponseBody
     public BaseResult offerDetail(HttpServletRequest request, String offerId){
@@ -88,16 +94,16 @@ public class DetailController {
                     ofrJson.put("canBuy", -1);
                     ofrJson.put("canBuy", -1);
                 }
-                if(childOffer.getOfferType().equals("CLASS")){
+                /*if(childOffer.getOfferType().equals("CLASS")){
                     // 获取乐视视频ID
                     BaseResult<VideoConfigDto> videoConfigDtoBaseResult = videoConfigService.queryVideo(childOffer.getMainMedia());
                     if(videoConfigDtoBaseResult.getCode()==BaseConstant.FAILED || videoConfigDtoBaseResult.getData()==null){
                         return new BaseResult(BaseConstant.FAILED, "获取视频失败");
                     }
                     if(StringUtils.isBlank(mainMedia)){
-                        mainMedia = videoConfigDtoBaseResult.getData().getVideoOutId();
+                        mainMedia = videoConfigDtoBaseResult.getData().getVideoUnique();
                     }
-                    ofrJson.put("mainMedia", videoConfigDtoBaseResult.getData().getVideoOutId());
+                    ofrJson.put("mainMedia", videoConfigDtoBaseResult.getData().getVideoUnique());
                     String metaDataStr = childOffer.getMetaData();
                     if(StringUtils.isNotBlank(metaDataStr)) {
                         JSONObject metaData = JSON.parseObject(metaDataStr);
@@ -109,12 +115,12 @@ public class DetailController {
                     } else {
                         ofrJson.put("teacher", null);
                     }
-                }
+                }*/
                 ofrJson.put("offerId", childOffer.getOfferId());
                 ofrJson.put("offerName", childOffer.getOfferName());
                 ofrJson.put("offerType", childOffer.getOfferType());
                 ofrJson.put("pic", childOffer.getOfferPic());
-                ofrJson.put("price", childOffer.getOfferPic());
+                ofrJson.put("price", childOffer.getSaleMoney());
                 offerList.add(ofrJson);
             }
             result.put("mainMedia", mainMedia);
@@ -202,7 +208,8 @@ public class DetailController {
             if(videoConfigDtoBaseResult.getCode()==BaseConstant.FAILED || videoConfigDtoBaseResult.getData()==null){
                 return new BaseResult(BaseConstant.FAILED, "获取视频失败");
             }
-            result.put("mainMedia", videoConfigDtoBaseResult.getData().getVideoOutId());
+            result.put("mainMedia", videoConfigDtoBaseResult.getData().getVideoUnique());
+            result.put("videoId", offerDto.getMainMedia());
             String metaDataStr = offerDto.getMetaData();
             if(StringUtils.isNotBlank(metaDataStr)) {
                 JSONObject metaData = JSON.parseObject(metaDataStr);
@@ -220,9 +227,10 @@ public class DetailController {
         }
     }
 
-    private JSONObject createBtn(Integer click, String name, String offerId, String price){
+    private JSONObject createBtn(String code, String name, Integer click, String offerId, String price){
         JSONObject buyBtn = new JSONObject();
         buyBtn.put("click", click);
+        buyBtn.put("code", code);
         buyBtn.put("name", name);
         buyBtn.put("offerId", offerId);
         buyBtn.put("price", price);
@@ -234,7 +242,7 @@ public class DetailController {
         if(StringUtils.isBlank(buyPriviStr)){
             // 不能单独购买
             canPlay = false;
-            btns.add(createBtn(0, "不能直接购买", offerId, null));
+            btns.add(createBtn(CANNOT_BUY,"不能直接购买",0, offerId, null));
         } else {
             // 可以购买
             JSONObject buyPrivi = JSON.parseObject(buyPriviStr);
@@ -247,25 +255,25 @@ public class DetailController {
                         // 查看SVIP是否可以购买
                         Object svipPrice = buyPrivi.get("SVIP");
                         if(svipPrice!=null){
-                            btns.add(createBtn(1, "升级SVIP", "OFFER002", "400"));
+                            btns.add(createBtn(BE_SVIP,"升级SVIP", 1, "OFFER002", "400"));
                         }
                     }
                 } else if(Integer.valueOf(price.toString())<=0){
                     // 免费
                     canPlay = true;
-                    btns.add(createBtn(1, "分享好友一起学习", offerId, null));
+                    btns.add(createBtn(SHARE_FRIEND, "分享好友一起学习", 1, offerId, null));
                 } else {
                     // 校验是否购买过此套餐
                     if(hasBuy(custId, offerId)){
                         // 已购买
                         canPlay = true;
-                        btns.add(createBtn(1, "分享好友一起学习", offerId, null));
+                        btns.add(createBtn(SHARE_FRIEND, "分享好友一起学习", 1, offerId, null));
                     } else {
                         // 需要购买
                         canPlay = false;
-                        btns.add(createBtn(1, "立即购买", offerId, price + ""));
+                        btns.add(createBtn(BUY_NOW, "立即购买", 1, offerId, price + ""));
                         if(lv.equals("VIP")){
-                            btns.add(createBtn(1, "升级SVIP", "OFFER002", "400"));
+                            btns.add(createBtn(BE_SVIP,"升级SVIP", 1, "OFFER002", "400"));
                         }
                     }
                 }
@@ -274,23 +282,23 @@ public class DetailController {
                 Object price = buyPrivi.get(lv);
                 if(price==null){
                     canPlay = false;
-                    btns.add(createBtn(1, "升级VIP", "OFFER001", "299"));
-                    btns.add(createBtn(1, "升级SVIP", "OFFER002", "699"));
+                    btns.add(createBtn(BE_VIP,"升级VIP", 1, "OFFER001", "299"));
+                    btns.add(createBtn(BE_SVIP,"升级SVIP", 1, "OFFER002", "699"));
                 } else if(Integer.valueOf(price.toString())<=0){
                     // 免费
                     canPlay = true;
-                    btns.add(createBtn(1, "分享好友一起学习", offerId, null));
+                    btns.add(createBtn(SHARE_FRIEND, "分享好友一起学习", 1, offerId, null));
                 } else {
                     // 校验是否购买过此套餐
                     if(hasBuy(custId, offerId)){
                         // 已购买
                         canPlay = true;
-                        btns.add(createBtn(1, "分享好友一起学习", offerId, null));
+                        btns.add(createBtn(SHARE_FRIEND, "分享好友一起学习", 1, offerId, null));
                     } else {
                         // 需要购买
                         canPlay = false;
-                        btns.add(createBtn(1, "立即购买", offerId, price + ""));
-                        btns.add(createBtn(1, "升级VIP", "OFFER001", "299"));
+                        btns.add(createBtn(BUY_NOW,"立即购买",1,  offerId, price + ""));
+                        btns.add(createBtn(BE_VIP,"升级VIP", 1, "OFFER001", "299"));
                     }
                 }
             }
