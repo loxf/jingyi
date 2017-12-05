@@ -37,6 +37,7 @@ public class ConfigController {
             }
         }
         Map info = WeixinUtil.signJsTicket(jsapiTicket, url);
+        info.put("appId", BaseConstant.WX_APPID);
         return new BaseResult(info);
     }
 
