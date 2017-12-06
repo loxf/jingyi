@@ -1,6 +1,7 @@
 package org.loxf.jyapi.web;
 
 import org.loxf.jyadmin.base.bean.BaseResult;
+import org.loxf.jyadmin.client.dto.CustDto;
 import org.loxf.jyadmin.client.service.ShareService;
 import org.loxf.jyapi.util.CookieUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,5 +26,15 @@ public class ShareController {
     public BaseResult offerDetail(HttpServletRequest request, String detailName, String shareObj, String type){
         String custId = CookieUtil.getCustId(request);
         return shareService.shareInfo(custId, detailName, shareObj, type);
+    }
+    /**
+     * 获取分享图片
+     * @return
+     */
+    @RequestMapping("/api/share/queryQRPic")
+    @ResponseBody
+    public BaseResult queryQRPic(HttpServletRequest request){
+        CustDto cust = CookieUtil.getCust(request);
+        return shareService.createQR(cust.getNickName(), cust.getCustId());
     }
 }
