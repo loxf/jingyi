@@ -28,7 +28,7 @@ public class DetailController {
     @Autowired
     private VideoConfigService videoConfigService;
     @Autowired
-    private PurchasedVideoService purchasedVideoService;
+    private PurchasedInfoService purchasedInfoService;
     @Autowired
     private ActiveCustListService activeCustListService;
     @Autowired
@@ -62,6 +62,7 @@ public class DetailController {
             // 基本信息
             result.put("htmlId", offerDto.getHtmlId());
             result.put("offerName", offerDto.getOfferName());
+            result.put("pic", offerDto.getOfferPic());
             // 页面展现按钮
             JSONArray btns = new JSONArray();
             String buyPriviStr = offerDto.getBuyPrivi();
@@ -152,6 +153,7 @@ public class DetailController {
         result.put("activeName", activeDto.getActiveName());
         result.put("activeStartTime", DateUtils.formatHms(activeDto.getActiveStartTime()));
         result.put("activeEndTime", DateUtils.formatHms(activeDto.getActiveEndTime()));
+        result.put("pic", activeDto.getPic());
         String province = activeDto.getProvince();
         String provinceName = (String) provinceAndCityService.query("P", province).getData();
         String city = activeDto.getCity();
@@ -209,6 +211,7 @@ public class DetailController {
                 return new BaseResult(BaseConstant.FAILED, "获取视频失败");
             }
             result.put("mainMedia", videoConfigDtoBaseResult.getData().getVideoUnique());
+            result.put("pic", offerDto.getOfferPic());
             result.put("videoId", offerDto.getMainMedia());
             String metaDataStr = offerDto.getMetaData();
             if(StringUtils.isNotBlank(metaDataStr)) {
@@ -308,10 +311,10 @@ public class DetailController {
 
     private boolean hasBuy(String custId, String offerId){
         // 校验是否购买过此套餐
-        PurchasedVideoDto purchasedVideoDto = new PurchasedVideoDto();
+        PurchasedInfoDto purchasedVideoDto = new PurchasedInfoDto();
         purchasedVideoDto.setCustId(custId);
         purchasedVideoDto.setOfferId(offerId);
-        BaseResult<Integer> hasBuy = purchasedVideoService.count(purchasedVideoDto);
+        BaseResult<Integer> hasBuy = purchasedInfoService.count(purchasedVideoDto);
         if(hasBuy.getCode()==BaseConstant.FAILED){
             throw new RuntimeException(hasBuy.getMsg());
         }

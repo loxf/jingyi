@@ -91,7 +91,7 @@ public class WeixinController {
                     if(orderMoney!=Long.parseLong(total_fee)){
                         resXml = createResp(FAIL, "订单金额不一致");
                     }
-                    BaseResult completeOrderResult = orderService.completeOrder(orderDto);
+                    BaseResult completeOrderResult = orderService.completeOrder(out_trade_no, 3, "");
                     resXml = createResp(completeOrderResult.getCode()==BaseConstant.SUCCESS?SUCCESS:FAIL,
                             completeOrderResult.getMsg());
                 }

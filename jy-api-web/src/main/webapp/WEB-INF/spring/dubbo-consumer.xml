@@ -61,7 +61,7 @@
                    interface="org.loxf.jyadmin.client.service.ProvinceAndCityService" id="provinceAndCityService"/>
 
     <dubbo:reference timeout="${dubbo.client.timeout}" version="${dubbo.client.version}"
-                   interface="org.loxf.jyadmin.client.service.PurchasedVideoService" id="purchasedVideoService"/>
+                   interface="org.loxf.jyadmin.client.service.PurchasedInfoService" id="purchasedInfoService"/>
 
     <dubbo:reference timeout="${dubbo.client.timeout}" version="${dubbo.client.version}"
                    interface="org.loxf.jyadmin.client.service.ShareService" id="shareService"/>
