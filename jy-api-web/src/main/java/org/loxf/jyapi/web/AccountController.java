@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
+import java.math.BigDecimal;
 
 @Controller
 public class AccountController {
@@ -29,6 +30,14 @@ public class AccountController {
     private CustCashService custCashService;
     @Autowired
     private CustBankService custBankService;
+
+    @ResponseBody
+    @RequestMapping("/api/account/balance")
+    public BaseResult getBalance(HttpServletRequest request) {
+        String custId = CookieUtil.getCustId(request);
+        BaseResult<BigDecimal> basicInfo = accountService.queryBalance(custId);
+        return basicInfo;
+    }
 
     @ResponseBody
     @RequestMapping("/api/account/init")
