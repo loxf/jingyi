@@ -13,6 +13,8 @@ import org.loxf.jyadmin.client.service.OfferService;
 import org.loxf.jyadmin.client.service.OrderService;
 import org.loxf.jyapi.util.ConfigUtil;
 import org.loxf.jyapi.util.CookieUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,7 +27,7 @@ import java.util.List;
 
 @Controller
 public class OrderController {
-
+    private static Logger logger = LoggerFactory.getLogger(OrderController.class);
     @Autowired
     private OrderService orderService;
     @Autowired
@@ -121,16 +123,14 @@ public class OrderController {
     /**
      * 创建订单
      *
-     * @param objId     必填，购买对象（商品ID，活动ID）
-     * @param orderType 必填，1 商品 3 VIP 5 活动
-     * @param payType   必填，支付方式 1：微信支付 3：余额支付
+     * @param paramOrder#objId     必填，购买对象（商品ID，活动ID） orderType 必填，1 商品 3 VIP 5 活动 payType   必填，支付方式 1：微信支付 3：余额支付
      * @return
      */
     @RequestMapping("/api/createOrder")
     @ResponseBody
-    public BaseResult createOrder(HttpServletRequest request, String objId, Integer orderType, Integer payType, List<OrderAttrDto> attrList) {
-        if (StringUtils.isBlank(objId) || orderType == null
-                || payType == null) {
+    public BaseResult createOrder(HttpServletRequest request, OrderDto paramOrder) {
+        if (StringUtils.isBlank(paramOrder.getObjId()) || paramOrder.getOrderType() == null
+                || paramOrder.getPayType() == null) {
             return new BaseResult(BaseConstant.FAILED, "关键参数缺失");
         }
         CustDto custDto = CookieUtil.getCust(request);
@@ -138,23 +138,23 @@ public class OrderController {
         // 订单
         OrderDto orderDto = new OrderDto();
         String privi = "";
-        BaseResult<Boolean> hasBuyOrder = orderService.hasBuy(custDto.getCustId(), orderType, objId);
+        BaseResult<Boolean> hasBuyOrder = orderService.hasBuy(custDto.getCustId(), paramOrder.getOrderType(), paramOrder.getObjId());
         if (hasBuyOrder.getCode() == BaseConstant.FAILED) {
             return new BaseResult(BaseConstant.FAILED, hasBuyOrder.getMsg());
         }
         if (hasBuyOrder.getData()) {
             return new BaseResult(BaseConstant.FAILED, "当前商品已经购买过");
         }
-        if (orderType.intValue() == 1) {
-            OfferDto offerDto = offerService.queryOffer(objId).getData();
+        if (paramOrder.getOrderType() == 1) {
+            OfferDto offerDto = offerService.queryOffer(paramOrder.getObjId()).getData();
             if (offerDto == null) {
                 return new BaseResult(BaseConstant.FAILED, "商品不存在");
             }
             orderDto.setOrderName(offerDto.getOfferName());
             privi = offerDto.getBuyPrivi();
 
-        } else if (orderType.intValue() == 3) {
-            OfferDto offerDto = offerService.queryOffer(objId).getData();
+        } else if (paramOrder.getOrderType() == 3) {
+            OfferDto offerDto = offerService.queryOffer(paramOrder.getObjId()).getData();
             if (offerDto == null) {
                 return new BaseResult(BaseConstant.FAILED, "服务不存在");
             }
@@ -168,15 +168,15 @@ public class OrderController {
                 orderDto.setTotalMoney(offerDto.getSaleMoney());
             }
             orderDto.setOrderName("升级" + offerDto.getOfferName());
-        } else if (orderType.intValue() == 5) {
-            ActiveDto activeDto = activeService.queryActive(objId).getData();
+        } else if (paramOrder.getOrderType() == 5) {
+            ActiveDto activeDto = activeService.queryActive(paramOrder.getObjId()).getData();
             if (activeDto == null) {
                 return new BaseResult(BaseConstant.FAILED, "活动不存在");
             }
             orderDto.setOrderName(activeDto.getActiveName());
             privi = activeDto.getActivePrivi();
         }
-        if (orderType.intValue() != 3) {
+        if (paramOrder.getOrderType()!= 3) {
             if (StringUtils.isBlank(privi)) {
                 return new BaseResult(BaseConstant.FAILED, "当前商品不能购买");
             } else {
@@ -191,12 +191,47 @@ public class OrderController {
             }
         }
 
-        orderDto.setObjId(objId);
-        orderDto.setOrderType(orderType);
-        orderDto.setPayType(payType);
+        orderDto.setObjId(paramOrder.getObjId());
+        orderDto.setOrderType(paramOrder.getOrderType());
+        orderDto.setPayType(paramOrder.getPayType());
         orderDto.setCustId(custDto.getCustId());
         orderDto.setBp(BigDecimal.ZERO);
         orderDto.setDiscount(10L);
-        return orderService.createOrder(orderDto, attrList);
+        return orderService.createOrder(orderDto, paramOrder.getAttrList());
+    }
+    /**
+     * 创建订单
+     *
+     * @param orderId
+     * @param password
+     *
+     * @return
+     */
+    @RequestMapping("/api/order/pay")
+    @ResponseBody
+    public BaseResult payOrder(HttpServletRequest request, String orderId, String password) {
+        String custId = CookieUtil.getCustId(request);
+        BaseResult<OrderDto> baseResult = orderService.queryOrder(orderId);
+        if(baseResult.getCode()==BaseConstant.FAILED){
+            return baseResult;
+        }
+        OrderDto orderDto = baseResult.getData();
+        if(orderDto==null){
+            return new BaseResult(BaseConstant.FAILED, "订单不存在");
+        }
+        try {
+            BaseResult<Boolean> payBaseResult = accountService.reduce(custId, password, orderDto.getOrderMoney(), BigDecimal.ZERO,
+                    orderId, orderDto.getOrderName());
+            if (payBaseResult.getCode() == BaseConstant.SUCCESS && payBaseResult.getData()) {
+                // 支付成功
+                orderService.completeOrder(orderId, 3, "支付成功");
+                return new BaseResult();
+            } else {
+                return payBaseResult;
+            }
+        } catch (Exception e){
+            logger.error("支付失败：", e);
+            return new BaseResult(BaseConstant.FAILED, "支付异常，请联系管理员");
+        }
     }
 }
