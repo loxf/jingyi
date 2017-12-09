@@ -131,4 +131,12 @@ public class AccountController {
                 cust.getPhone(), cust.getIsChinese(), password, verifyCode);
         return baseResult1;
     }
+
+    @RequestMapping("/api/account/getCash")
+    @ResponseBody
+    public BaseResult getCash(HttpServletRequest request, CustCashDto custCashDto, String password, String sign){
+        String custId = CookieUtil.getCustId(request);
+        custCashDto.setCustId(custId);
+        return custCashService.addCustCashRecord(custCashDto, password, sign);
+    }
 }
