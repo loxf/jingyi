@@ -13,6 +13,7 @@ import org.loxf.jyadmin.client.service.OfferService;
 import org.loxf.jyadmin.client.service.OrderService;
 import org.loxf.jyapi.util.ConfigUtil;
 import org.loxf.jyapi.util.CookieUtil;
+import org.loxf.jyapi.util.IPUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -142,9 +143,6 @@ public class OrderController {
         if (hasBuyOrder.getCode() == BaseConstant.FAILED) {
             return new BaseResult(BaseConstant.FAILED, hasBuyOrder.getMsg());
         }
-        if (hasBuyOrder.getData()) {
-            return new BaseResult(BaseConstant.FAILED, "当前商品已经购买过");
-        }
         if (paramOrder.getOrderType() == 1) {
             OfferDto offerDto = offerService.queryOffer(paramOrder.getObjId()).getData();
             if (offerDto == null) {
@@ -197,7 +195,8 @@ public class OrderController {
         orderDto.setCustId(custDto.getCustId());
         orderDto.setBp(BigDecimal.ZERO);
         orderDto.setDiscount(10L);
-        return orderService.createOrder(orderDto, paramOrder.getAttrList());
+        String ip = IPUtil.getIpAddr(request);
+        return orderService.createOrder(custDto.getOpenid(), ip, orderDto, paramOrder.getAttrList());
     }
     /**
      * 创建订单
@@ -224,8 +223,7 @@ public class OrderController {
                     orderId, orderDto.getOrderName());
             if (payBaseResult.getCode() == BaseConstant.SUCCESS && payBaseResult.getData()) {
                 // 支付成功
-                orderService.completeOrder(orderId, 3, "支付成功");
-                return new BaseResult();
+                return orderService.completeOrder(orderId, 3, "支付成功");
             } else {
                 return payBaseResult;
             }

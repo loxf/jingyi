@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
+import java.math.BigDecimal;
 import java.util.List;
 
 @Controller
@@ -261,7 +262,7 @@ public class DetailController {
                             btns.add(createBtn(BE_SVIP,"升级SVIP", 1, "OFFER002", "400"));
                         }
                     }
-                } else if(Integer.valueOf(price.toString())<=0){
+                } else if(new BigDecimal(price.toString()).compareTo(BigDecimal.ZERO)<=0){
                     // 免费
                     canPlay = true;
                     btns.add(createBtn(SHARE_FRIEND, "分享好友一起学习", 1, offerId, null));
@@ -287,7 +288,7 @@ public class DetailController {
                     canPlay = false;
                     btns.add(createBtn(BE_VIP,"升级VIP", 1, "OFFER001", "299"));
                     btns.add(createBtn(BE_SVIP,"升级SVIP", 1, "OFFER002", "699"));
-                } else if(Integer.valueOf(price.toString())<=0){
+                } else if(new BigDecimal(price.toString()).compareTo(BigDecimal.ZERO)<=0){
                     // 免费
                     canPlay = true;
                     btns.add(createBtn(SHARE_FRIEND, "分享好友一起学习", 1, offerId, null));

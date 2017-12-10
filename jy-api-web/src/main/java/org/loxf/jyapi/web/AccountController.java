@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
 
 @Controller
 public class AccountController {
@@ -98,7 +100,7 @@ public class AccountController {
             return new BaseResult(BaseConstant.FAILED, "参数为空");
         }
         String custId = CookieUtil.getCustId(request);
-        if (StringUtils.isBlank(dto.getBank()) || StringUtils.isBlank(dto.getBankNo()) || StringUtils.isBlank(dto.getPhone())
+        if (StringUtils.isBlank(dto.getBankNo()) || StringUtils.isBlank(dto.getBankNo()) || StringUtils.isBlank(dto.getPhone())
                 || StringUtils.isBlank(dto.getUserName())) {
             return new BaseResult(BaseConstant.FAILED, "参数不全");
         }
@@ -128,7 +130,7 @@ public class AccountController {
 
     @ResponseBody
     @RequestMapping("/api/account/bankList")
-    public BaseResult<String[]> bankList() {
+    public BaseResult<List<Map<String, String>>> bankList() {
         return custBankService.queryBankList();
     }
 
