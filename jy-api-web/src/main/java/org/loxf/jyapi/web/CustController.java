@@ -187,7 +187,7 @@ public class CustController {
      */
     @RequestMapping("/api/cust/bindPhone")
     @ResponseBody
-    public BaseResult bindPhone(HttpServletRequest request, String email, String phone, Integer isChinese, String verifyCode) {
+    public BaseResult bindPhone(HttpServletRequest request, String realName, String email, String phone, Integer isChinese, String verifyCode) {
         CustDto custDto = CookieUtil.getCust(request);
         if(custDto.getIsChinese()==null) {
             BaseResult verifyResult = verifyCodeService.verify(custDto.getCustId(), verifyCode);
@@ -195,6 +195,7 @@ public class CustController {
                 custDto.setIsChinese(isChinese);
                 custDto.setEmail(email);
                 custDto.setPhone(phone);
+                custDto.setRealName(realName);
                 custService.updateCust(custDto);
                 // 刷新缓存
                 CustDto custInfo = custService.queryCustByCustId(custDto.getCustId()).getData();

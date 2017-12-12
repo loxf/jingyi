@@ -145,6 +145,7 @@ public class IndexController {
         if(StringUtils.isNotBlank(sortType) && sortType.equals("HOT")){
             offerDto.setSortType("HOT");
         }
+        offerDto.setStatus(1);
         PageResult<OfferDto> offerDtoPageResult = offerService.pager(offerDto, 2);
         List<JSONObject> list = new ArrayList<>();
         if(offerDtoPageResult.getTotal()>0){
@@ -194,6 +195,7 @@ public class IndexController {
         ActiveDto activeDto = new ActiveDto();
         Pager pager = new Pager(page, size);
         activeDto.setPager(pager);
+        activeDto.setStatus(1);
         PageResult<ActiveDto> pageResult = activeService.pager(activeDto);
         List<JSONObject> result = new ArrayList<>();
         if(pageResult.getTotal()>0) {

@@ -55,39 +55,40 @@ public class OrderController {
             return new BaseResult(BaseConstant.FAILED, "订单类型为空");
         }
         JSONObject result = new JSONObject();
+        CustDto custDto = CookieUtil.getCust(request);
         // 当前余额
-        BaseResult<BigDecimal> balanceBaseResult = accountService.queryBalance(CookieUtil.getCustId(request));
-        if(balanceBaseResult.getCode()==BaseConstant.FAILED){
+        BaseResult<BigDecimal> balanceBaseResult = accountService.queryBalance(custDto.getCustId());
+        if (balanceBaseResult.getCode() == BaseConstant.FAILED) {
             return balanceBaseResult;
         }
         result.put("balance", balanceBaseResult.getData().toPlainString());
         // 订单属性
-        if(type.equals("ACTIVE")){// 活动才有订单属性
+        if (type.equals("ACTIVE")) {// 活动才有订单属性
             setAttrList(result);
         }
         //商品列表
-        return setOfferList(offerId, type, result);
+        return setOfferList(custDto.getUserLevel(), offerId, type, result);
     }
 
-    private BaseResult setOfferList(String offerId, String type, JSONObject result){
+    private BaseResult setOfferList(String userLevel, String offerId, String type, JSONObject result) {
         String[] objs = offerId.split(",");
         List<JSONObject> offerList = new ArrayList<>();
-        for(String objId : objs) {
+        for (String objId : objs) {
             if (type.equals("ACTIVE")) {
                 ActiveDto activeDto = activeService.queryActive(objId).getData();
-                if(activeDto==null){
+                if (activeDto == null) {
                     return new BaseResult(BaseConstant.FAILED, "活动不存在");
                 }
                 offerList.add(settingOfferInfo(activeDto.getActiveId(), activeDto.getActiveName(),
-                        activeDto.getPic(), activeDto.getPrice()));
+                        activeDto.getPic(), calculatePrice(userLevel, activeDto.getActivePrivi(), activeDto.getPrice())));
             } else if (type.equals("VIP") || type.equals("OFFER") || type.equals("CLASS")) {
                 OfferDto offerDto = offerService.queryOffer(objId).getData();
-                if(offerDto==null){
+                if (offerDto == null) {
                     return new BaseResult(BaseConstant.FAILED, "商品不存在");
                 }
                 JSONObject jsonObject = settingOfferInfo(offerDto.getOfferId(), offerDto.getOfferName(),
-                        offerDto.getOfferPic(), offerDto.getSaleMoney());
-                if(type.equals("VIP")){
+                        offerDto.getOfferPic(), calculatePrice(userLevel, offerDto.getBuyPrivi(), offerDto.getSaleMoney()));
+                if (type.equals("VIP")) {
                     String desc = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_PAY, "VIP_ORDER_DESC",
                             "畅享名师干货;分享即可获得奖学金").getConfigValue();
                     jsonObject.put("descList", desc.split(";"));
@@ -99,7 +100,20 @@ public class OrderController {
         return new BaseResult(result);
     }
 
-    private JSONObject settingOfferInfo(String offerId, String offerName, String pic, BigDecimal price){
+    private BigDecimal calculatePrice(String userLevel, String priviStr, BigDecimal salePrice) {
+        if(StringUtils.isBlank(priviStr)){
+            return salePrice;
+        } else {
+            JSONObject priviJson = JSONObject.parseObject(priviStr);
+            if(priviJson.containsKey(userLevel)){
+                return new BigDecimal(priviJson.getString(userLevel));
+            } else {
+                return salePrice;
+            }
+        }
+    }
+
+    private JSONObject settingOfferInfo(String offerId, String offerName, String pic, BigDecimal price) {
         JSONObject offer = new JSONObject();
         offer.put("offerId", offerId);
         offer.put("offerName", offerName);
@@ -109,7 +123,7 @@ public class OrderController {
     }
 
 
-    private void setAttrList(JSONObject result){
+    private void setAttrList(JSONObject result) {
         List<OrderAttrDto> attrDtoList = new ArrayList<>();
         OrderAttrDto orderAttrDto = new OrderAttrDto();
         orderAttrDto.setAttrCode("ACTIVITY_USER_NAME");
@@ -121,10 +135,11 @@ public class OrderController {
         attrDtoList.add(orderAttrDto1);
         result.put("attrList", attrDtoList);
     }
+
     /**
      * 创建订单
      *
-     * @param paramOrder#objId     必填，购买对象（商品ID，活动ID） orderType 必填，1 商品 3 VIP 5 活动 payType   必填，支付方式 1：微信支付 3：余额支付
+     * @param paramOrder#objId 必填，购买对象（商品ID，活动ID） orderType 必填，1 商品 3 VIP 5 活动 payType   必填，支付方式 1：微信支付 3：余额支付
      * @return
      */
     @RequestMapping("/api/createOrder")
@@ -174,7 +189,7 @@ public class OrderController {
             orderDto.setOrderName(activeDto.getActiveName());
             privi = activeDto.getActivePrivi();
         }
-        if (paramOrder.getOrderType()!= 3) {
+        if (paramOrder.getOrderType() != 3) {
             if (StringUtils.isBlank(privi)) {
                 return new BaseResult(BaseConstant.FAILED, "当前商品不能购买");
             } else {
@@ -198,12 +213,12 @@ public class OrderController {
         String ip = IPUtil.getIpAddr(request);
         return orderService.createOrder(custDto.getOpenid(), ip, orderDto, paramOrder.getAttrList());
     }
+
     /**
      * 创建订单
      *
      * @param orderId
      * @param password
-     *
      * @return
      */
     @RequestMapping("/api/order/pay")
@@ -211,11 +226,11 @@ public class OrderController {
     public BaseResult payOrder(HttpServletRequest request, String orderId, String password) {
         String custId = CookieUtil.getCustId(request);
         BaseResult<OrderDto> baseResult = orderService.queryOrder(orderId);
-        if(baseResult.getCode()==BaseConstant.FAILED){
+        if (baseResult.getCode() == BaseConstant.FAILED) {
             return baseResult;
         }
         OrderDto orderDto = baseResult.getData();
-        if(orderDto==null){
+        if (orderDto == null) {
             return new BaseResult(BaseConstant.FAILED, "订单不存在");
         }
         try {
@@ -227,7 +242,7 @@ public class OrderController {
             } else {
                 return payBaseResult;
             }
-        } catch (Exception e){
+        } catch (Exception e) {
             logger.error("支付失败：", e);
             return new BaseResult(BaseConstant.FAILED, "支付异常，请联系管理员");
         }
