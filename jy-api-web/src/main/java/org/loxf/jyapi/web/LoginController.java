@@ -1,6 +1,7 @@
 package org.loxf.jyapi.web;
 
 import com.alibaba.fastjson.JSON;
+import org.apache.commons.lang3.StringUtils;
 import org.loxf.jyadmin.base.bean.BaseResult;
 import org.loxf.jyadmin.base.constant.BaseConstant;
 import org.loxf.jyadmin.base.exception.BizException;
@@ -149,7 +150,9 @@ public class LoginController {
         if (baseResult.getCode() == BaseConstant.SUCCESS) {
             custService.refreshCustByOpenId(custDto, userAccessToken);
         } else {
-            custDto.setRecommend(recommend);
+            if(StringUtils.isNotBlank(recommend)) {
+                custDto.setRecommend(recommend.toUpperCase());
+            }
             BaseResult<String> custBaseResult = custService.addCust(custDto, userAccessToken);
             custDto.setCustId(custBaseResult.getData());
         }
