@@ -24,6 +24,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLEncoder;
+import java.util.Map;
 import java.util.Random;
 
 @Controller
@@ -87,9 +88,9 @@ public class LoginController {
                         wxUserInfo = testWXUserInfo();
                     }
                     if (wxUserInfo != null) {
-                        CustDto custDto = settingUser(request, response, userAccessToken, wxUserInfo);
+                        Map<String, String> paramMap = UrlUtil.URLRequest(targetUrl);
+                        CustDto custDto = settingUser(request, response, paramMap.get("recommend"), userAccessToken, wxUserInfo);
                         // TODO system log
-                        // targetUrl = UrlUtil.inputURL(targetUrl, "recommend", custDto.getCustId());
                         try {
                             response.sendRedirect(targetUrl);
                         } catch (IOException e) {
@@ -134,7 +135,7 @@ public class LoginController {
         return wxUserInfo;
     }
 
-    private CustDto settingUser(HttpServletRequest request, HttpServletResponse response,
+    private CustDto settingUser(HttpServletRequest request, HttpServletResponse response, String recommend,
                                 UserAccessToken userAccessToken, WXUserInfo wxUserInfo) {
         //处理微信用户信息
         CustDto custDto = new CustDto();
@@ -148,7 +149,6 @@ public class LoginController {
         if (baseResult.getCode() == BaseConstant.SUCCESS) {
             custService.refreshCustByOpenId(custDto, userAccessToken);
         } else {
-            String recommend = request.getParameter("recommend");
             custDto.setRecommend(recommend);
             BaseResult<String> custBaseResult = custService.addCust(custDto, userAccessToken);
             custDto.setCustId(custBaseResult.getData());
