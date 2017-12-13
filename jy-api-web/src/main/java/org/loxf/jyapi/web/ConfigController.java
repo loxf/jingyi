@@ -6,14 +6,19 @@ import org.loxf.jyadmin.base.bean.BaseResult;
 import org.loxf.jyadmin.base.constant.BaseConstant;
 import org.loxf.jyadmin.base.util.JedisUtil;
 import org.loxf.jyadmin.base.util.weixin.WeixinUtil;
+import org.loxf.jyadmin.client.dto.SystemLogDto;
 import org.loxf.jyadmin.client.service.ConfigService;
 import org.loxf.jyadmin.client.service.ProvinceAndCityService;
+import org.loxf.jyadmin.client.service.SystemLogService;
 import org.loxf.jyapi.thread.WxAccessTokenFreshJob;
+import org.loxf.jyapi.util.CookieUtil;
+import org.loxf.jyapi.util.IPUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.Map;
 
 @Controller
@@ -24,6 +29,8 @@ public class ConfigController {
     private ProvinceAndCityService provinceAndCityService;
     @Autowired
     private JedisUtil jedisUtil;
+    @Autowired
+    private SystemLogService systemLogService;
 
     @RequestMapping("/api/system/wxUrlConfig")
     @ResponseBody
@@ -52,4 +59,26 @@ public class ConfigController {
     public BaseResult getArea(Integer type){
         return provinceAndCityService.queryAreaByTree(type);
     }
+
+    @RequestMapping("/api/system/log")
+    @ResponseBody
+    public BaseResult log(HttpServletRequest request, String osType, String page, String location){
+        try {
+            systemLogService.log(createLog(CookieUtil.getCustId(request), IPUtil.getIpAddr(request),
+                    osType, page, location));
+        } finally {
+            return new BaseResult();
+        }
+    }
+
+    private SystemLogDto createLog(String custId, String ip, String os, String page, String position){
+        SystemLogDto log = new SystemLogDto();
+        log.setCustId(custId);
+        log.setIp(ip);
+        log.setOs(os);
+        log.setPage(page);
+        log.setPosition(position);
+        return log;
+    }
+
 }

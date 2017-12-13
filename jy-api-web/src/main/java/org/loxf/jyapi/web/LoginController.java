@@ -91,7 +91,6 @@ public class LoginController {
                     if (wxUserInfo != null) {
                         Map<String, String> paramMap = UrlUtil.URLRequest(targetUrl);
                         CustDto custDto = settingUser(request, response, paramMap.get("recommend"), userAccessToken, wxUserInfo);
-                        // TODO system log
                         try {
                             response.sendRedirect(targetUrl);
                         } catch (IOException e) {
@@ -147,7 +146,7 @@ public class LoginController {
         // 计算token失效时间
         int expireSecond = Integer.valueOf(userAccessToken.getExpires_in());
         userAccessToken.setExpires_in((expireSecond * 1000 + System.currentTimeMillis()) + "");
-        if (baseResult.getCode() == BaseConstant.SUCCESS) {
+        if (baseResult.getCode() == BaseConstant.SUCCESS && baseResult.getData()!=null) {
             custService.refreshCustByOpenId(custDto, userAccessToken);
         } else {
             if(StringUtils.isNotBlank(recommend)) {
