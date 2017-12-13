@@ -10,6 +10,7 @@ import org.loxf.jyadmin.base.constant.BaseConstant;
 import org.loxf.jyadmin.base.util.DateUtils;
 import org.loxf.jyadmin.client.dto.*;
 import org.loxf.jyadmin.client.service.*;
+import org.loxf.jyapi.util.ConfigUtil;
 import org.loxf.jyapi.util.CookieUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -63,6 +64,9 @@ public class DetailController {
             // 基本信息
             result.put("htmlId", offerDto.getHtmlId());
             result.put("offerName", offerDto.getOfferName());
+            String desc = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_COM, "APP_SHARE_DESC",
+                    "杨静怡老师邀请您来 一起找到绽放优雅的秘密").getConfigValue();
+            result.put("offerDesc", StringUtils.isNotBlank(offerDto.getOfferDesc())?offerDto.getOfferDesc():desc);
             result.put("pic", offerDto.getOfferPic());
             // 页面展现按钮
             JSONArray btns = new JSONArray();
@@ -152,6 +156,9 @@ public class DetailController {
         // 基本信息
         result.put("htmlId", activeDto.getHtmlId());
         result.put("activeName", activeDto.getActiveName());
+        String desc = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_COM, "APP_SHARE_DESC",
+                "杨静怡老师邀请您来 一起找到绽放优雅的秘密").getConfigValue();
+        result.put("activeDesc", StringUtils.isNotBlank(activeDto.getActiveDesc())?activeDto.getActiveDesc():desc);
         result.put("activeStartTime", DateUtils.formatHms(activeDto.getActiveStartTime()));
         result.put("activeEndTime", DateUtils.formatHms(activeDto.getActiveEndTime()));
         result.put("pic", activeDto.getPic());
@@ -198,6 +205,9 @@ public class DetailController {
             // 基本信息
             result.put("htmlId", offerDto.getHtmlId());
             result.put("offerName", offerDto.getOfferName());
+            String desc = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_COM, "APP_SHARE_DESC",
+                    "杨静怡老师邀请您来 一起找到绽放优雅的秘密").getConfigValue();
+            result.put("offerDesc", StringUtils.isNotBlank(offerDto.getOfferDesc())?offerDto.getOfferDesc():desc);
             // 页面展现按钮
             JSONArray btns = new JSONArray();
             String buyPriviStr = offerDto.getBuyPrivi();
