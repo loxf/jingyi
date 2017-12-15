@@ -2,6 +2,7 @@ package org.loxf.jyapi.web;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import org.apache.commons.lang3.StringUtils;
 import org.loxf.jyadmin.base.bean.BaseResult;
 import org.loxf.jyadmin.base.bean.PageResult;
 import org.loxf.jyadmin.base.bean.Pager;
@@ -190,6 +191,11 @@ public class CustController {
     public BaseResult bindPhone(HttpServletRequest request, String realName, String email, String phone, Integer isChinese, String verifyCode) {
         CustDto custDto = CookieUtil.getCust(request);
         if(custDto.getIsChinese()==null) {
+            if(isChinese==1 && StringUtils.isBlank(phone)){
+                return new BaseResult(BaseConstant.FAILED, "国内用户请填写手机号码");
+            } else if(isChinese==2 && StringUtils.isBlank(email)){
+                return new BaseResult(BaseConstant.FAILED, "国内用户请填写邮箱");
+            }
             BaseResult verifyResult = verifyCodeService.verify(custDto.getCustId(), verifyCode);
             if(verifyResult.getCode()==BaseConstant.SUCCESS) {
                 custDto.setIsChinese(isChinese);
