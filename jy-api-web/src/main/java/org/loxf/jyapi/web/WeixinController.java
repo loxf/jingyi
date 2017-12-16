@@ -117,6 +117,8 @@ public class WeixinController {
                         }
                     }
                     jedisUtil.del(key);
+                } else {
+                    resXml = createResp(FAIL, "正在处理");
                 }
             } else {
                 resXml = createResp(FAIL, notifyMapResult.getMsg());
