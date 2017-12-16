@@ -54,17 +54,13 @@ public class OrderController {
         if (StringUtils.isBlank(type)) {
             return new BaseResult(BaseConstant.FAILED, "订单类型为空");
         }
-        JSONObject result = new JSONObject();
         CustDto custDto = CookieUtil.getCust(request);
         // 当前余额
-        BaseResult<BigDecimal> balanceBaseResult = accountService.queryBalance(custDto.getCustId());
+        BaseResult<JSONObject> balanceBaseResult = accountService.queryAccount(custDto.getCustId());
         if (balanceBaseResult.getCode() == BaseConstant.FAILED) {
             return balanceBaseResult;
         }
-        result.put("balance", balanceBaseResult.getData().toPlainString());
-        JSONObject accountInfo = accountService.queryAccount(custDto.getCustId()).getData();
-        // 是否设置支付密码
-        result.put("hasPassword", accountInfo.getBoolean("hasPassword"));
+        JSONObject result = balanceBaseResult.getData();
         // 订单属性
         if (type.equals("ACTIVE")) {// 活动才有订单属性
             setAttrList(result);
