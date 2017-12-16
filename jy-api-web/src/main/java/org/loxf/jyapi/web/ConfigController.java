@@ -11,6 +11,7 @@ import org.loxf.jyadmin.client.service.ConfigService;
 import org.loxf.jyadmin.client.service.ProvinceAndCityService;
 import org.loxf.jyadmin.client.service.SystemLogService;
 import org.loxf.jyapi.thread.WxAccessTokenFreshJob;
+import org.loxf.jyapi.util.ConfigUtil;
 import org.loxf.jyapi.util.CookieUtil;
 import org.loxf.jyapi.util.IPUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,35 +35,36 @@ public class ConfigController {
 
     @RequestMapping("/api/system/wxUrlConfig")
     @ResponseBody
-    public BaseResult getConfig(String url){
+    public BaseResult getConfig(String url) {
         String jsapiTicket = jedisUtil.get(BaseConstant.WX_JS_TICKET);
-        if(StringUtils.isBlank(jsapiTicket)){
+        if (StringUtils.isBlank(jsapiTicket)) {
             WxAccessTokenFreshJob.deal(jedisUtil);
             jsapiTicket = jedisUtil.get(BaseConstant.WX_JS_TICKET);
-            if(StringUtils.isBlank(jsapiTicket)){
+            if (StringUtils.isBlank(jsapiTicket)) {
                 return new BaseResult(BaseConstant.FAILED, "获取TOKEN失败");
             }
         }
         Map info = WeixinUtil.signJsTicket(jsapiTicket, url);
-        info.put("appId", BaseConstant.WX_APPID);
+        String appId = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "WX_APPID").getConfigValue();
+        info.put("appId", appId);
         return new BaseResult(info);
     }
 
     @RequestMapping("/api/system/getConfig")
     @ResponseBody
-    public BaseResult getConfig(String catalog, String configCode){
+    public BaseResult getConfig(String catalog, String configCode) {
         return configService.queryConfig(catalog, configCode);
     }
 
     @RequestMapping("/api/system/getArea")
     @ResponseBody
-    public BaseResult getArea(Integer type){
+    public BaseResult getArea(Integer type) {
         return provinceAndCityService.queryAreaByTree(type);
     }
 
     @RequestMapping("/api/system/log")
     @ResponseBody
-    public BaseResult log(HttpServletRequest request, String osType, String page, String location){
+    public BaseResult log(HttpServletRequest request, String osType, String page, String location) {
         try {
             systemLogService.log(createLog(CookieUtil.getCustId(request), IPUtil.getIpAddr(request),
                     osType, page, location));
@@ -71,7 +73,7 @@ public class ConfigController {
         }
     }
 
-    private SystemLogDto createLog(String custId, String ip, String os, String page, String position){
+    private SystemLogDto createLog(String custId, String ip, String os, String page, String position) {
         SystemLogDto log = new SystemLogDto();
         log.setCustId(custId);
         log.setIp(ip);

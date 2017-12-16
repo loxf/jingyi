@@ -6,6 +6,7 @@ import org.loxf.jyadmin.base.util.JedisUtil;
 import org.loxf.jyadmin.base.util.weixin.WeixinUtil;
 import org.loxf.jyadmin.base.util.weixin.bean.AccessToken;
 import org.loxf.jyadmin.base.util.weixin.bean.JsTicket;
+import org.loxf.jyapi.util.ConfigUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,17 +51,19 @@ public class WxAccessTokenFreshJob extends JOB {
         String token = jedisUtil.get(BaseConstant.WX_ACCESS_TOKEN);
         AccessToken accessToken = null;
         JsTicket jsTicket = null;
+        String appId = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "WX_APPID").getConfigValue();
+        String appSecret = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "WX_APPSECRET").getConfigValue();
         if(StringUtils.isBlank(token)){
             // 不存在accessToken直接获取刷新
-            accessToken = WeixinUtil.queryAccessToken();
+            accessToken = WeixinUtil.queryAccessToken(appId, appSecret);
             jsTicket = WeixinUtil.queryJsTicket(accessToken.getAccess_token());
         } else {
             String expireTime = jedisUtil.get(token);
             if(StringUtils.isBlank(expireTime)){
-                accessToken = WeixinUtil.queryAccessToken();
+                accessToken = WeixinUtil.queryAccessToken(appId, appSecret);
                 jsTicket = WeixinUtil.queryJsTicket(accessToken.getAccess_token());
             }else if(Long.parseLong(expireTime)-System.currentTimeMillis()<10*60*1000){// 最后十分钟 刷新access_token
-                accessToken = WeixinUtil.queryAccessToken();
+                accessToken = WeixinUtil.queryAccessToken(appId, appSecret);
                 jsTicket = WeixinUtil.queryJsTicket(accessToken.getAccess_token());
             }
         }

@@ -62,6 +62,9 @@ public class OrderController {
             return balanceBaseResult;
         }
         result.put("balance", balanceBaseResult.getData().toPlainString());
+        JSONObject accountInfo = accountService.queryAccount(custDto.getCustId()).getData();
+        // 是否设置支付密码
+        result.put("hasPassword", accountInfo.getBoolean("hasPassword"));
         // 订单属性
         if (type.equals("ACTIVE")) {// 活动才有订单属性
             setAttrList(result);
@@ -79,15 +82,18 @@ public class OrderController {
                 if (activeDto == null) {
                     return new BaseResult(BaseConstant.FAILED, "活动不存在");
                 }
+
                 offerList.add(settingOfferInfo(activeDto.getActiveId(), activeDto.getActiveName(),
-                        activeDto.getPic(), calculatePrice(userLevel, activeDto.getActivePrivi(), activeDto.getPrice())));
+                        activeDto.getPic(), calculatePrice(userLevel, activeDto.getActivePrivi(), activeDto.getPrice()),
+                        getMaxBp(activeDto.getMetaData())));
             } else if (type.equals("VIP") || type.equals("OFFER") || type.equals("CLASS")) {
                 OfferDto offerDto = offerService.queryOffer(objId).getData();
                 if (offerDto == null) {
                     return new BaseResult(BaseConstant.FAILED, "商品不存在");
                 }
                 JSONObject jsonObject = settingOfferInfo(offerDto.getOfferId(), offerDto.getOfferName(),
-                        offerDto.getOfferPic(), calculatePrice(userLevel, offerDto.getBuyPrivi(), offerDto.getSaleMoney()));
+                        offerDto.getOfferPic(), calculatePrice(userLevel, offerDto.getBuyPrivi(), offerDto.getSaleMoney()),
+                        getMaxBp(offerDto.getMetaData()));
                 if (type.equals("VIP")) {
                     String desc = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_PAY, "VIP_ORDER_DESC",
                             "畅享名师干货;分享即可获得奖学金").getConfigValue();
@@ -98,6 +104,17 @@ public class OrderController {
         }
         result.put("offerList", offerList);
         return new BaseResult(result);
+    }
+
+    private int getMaxBp(String metaData){
+        int maxBp = 0;
+        if(StringUtils.isNotBlank(metaData)){
+            JSONObject jsonObject = JSONObject.parseObject(metaData);
+            if(jsonObject.containsKey("MAXBP")){
+                maxBp = jsonObject.getIntValue("MAXBP");
+            }
+        }
+        return maxBp;
     }
 
     private BigDecimal calculatePrice(String userLevel, String priviStr, BigDecimal salePrice) {
@@ -113,12 +130,13 @@ public class OrderController {
         }
     }
 
-    private JSONObject settingOfferInfo(String offerId, String offerName, String pic, BigDecimal price) {
+    private JSONObject settingOfferInfo(String offerId, String offerName, String pic, BigDecimal price, int maxBp) {
         JSONObject offer = new JSONObject();
         offer.put("offerId", offerId);
         offer.put("offerName", offerName);
         offer.put("pic", pic);
         offer.put("price", price);
+        offer.put("maxBp", maxBp);
         return offer;
     }
 
@@ -154,6 +172,8 @@ public class OrderController {
         // 订单
         OrderDto orderDto = new OrderDto();
         String privi = "";
+        String metaDataStr = "";
+        int maxBpUser = 0;
         BaseResult<Boolean> hasBuyOrder = orderService.hasBuy(custDto.getCustId(), paramOrder.getOrderType(), paramOrder.getObjId());
         if (hasBuyOrder.getCode() == BaseConstant.FAILED) {
             return new BaseResult(BaseConstant.FAILED, hasBuyOrder.getMsg());
@@ -165,7 +185,7 @@ public class OrderController {
             }
             orderDto.setOrderName(offerDto.getOfferName());
             privi = offerDto.getBuyPrivi();
-
+            metaDataStr = offerDto.getMetaData();
         } else if (paramOrder.getOrderType() == 3) {
             OfferDto offerDto = offerService.queryOffer(paramOrder.getObjId()).getData();
             if (offerDto == null) {
@@ -188,6 +208,7 @@ public class OrderController {
             }
             orderDto.setOrderName(activeDto.getActiveName());
             privi = activeDto.getActivePrivi();
+            metaDataStr = activeDto.getMetaData();
         }
         if (paramOrder.getOrderType() != 3) {
             if (StringUtils.isBlank(privi)) {
@@ -202,13 +223,24 @@ public class OrderController {
                     orderDto.setTotalMoney(new BigDecimal(price));
                 }
             }
+            if(StringUtils.isNotBlank(metaDataStr)){
+                JSONObject metaDataJson = JSONObject.parseObject(metaDataStr);
+                maxBpUser = metaDataJson.getIntValue("MAXBP");
+            }
         }
-
+        if(paramOrder.getBp()!=null){
+            if(paramOrder.getBp().compareTo(new BigDecimal(maxBpUser))>0){
+                return new BaseResult(BaseConstant.FAILED, "当前商品最多使用" + maxBpUser + "积分");
+            } else {
+                // 减去抵扣的积分
+                orderDto.setOrderMoney(orderDto.getOrderMoney().subtract((paramOrder.getBp().divide(BigDecimal.TEN))));
+            }
+        }
         orderDto.setObjId(paramOrder.getObjId());
         orderDto.setOrderType(paramOrder.getOrderType());
         orderDto.setPayType(paramOrder.getPayType());
         orderDto.setCustId(custDto.getCustId());
-        orderDto.setBp(BigDecimal.ZERO);
+        orderDto.setBp(paramOrder.getBp());
         orderDto.setDiscount(10L);
         String ip = IPUtil.getIpAddr(request);
         return orderService.createOrder(custDto.getOpenid(), ip, orderDto, paramOrder.getAttrList());
@@ -238,7 +270,7 @@ public class OrderController {
                     orderId, orderDto.getOrderName());
             if (payBaseResult.getCode() == BaseConstant.SUCCESS && payBaseResult.getData()) {
                 // 支付成功
-                return orderService.completeOrder(orderId, 3, "支付成功");
+                return orderService.completeOrder(orderId, null, 3, "支付成功");
             } else {
                 return payBaseResult;
             }

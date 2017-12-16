@@ -11,6 +11,7 @@ import org.loxf.jyadmin.base.util.weixin.bean.UserAccessToken;
 import org.loxf.jyadmin.base.util.weixin.bean.WXUserInfo;
 import org.loxf.jyadmin.client.dto.CustDto;
 import org.loxf.jyadmin.client.service.CustService;
+import org.loxf.jyapi.util.ConfigUtil;
 import org.loxf.jyapi.util.CookieUtil;
 import org.loxf.jyapi.util.UrlUtil;
 import org.slf4j.Logger;
@@ -41,7 +42,8 @@ public class LoginController {
     public void login(HttpServletRequest request, HttpServletResponse response, String targetUrl) {
         // 获取登录随机code，五分钟失效
         String code = getRandomCharAndNumr(8);
-        String loginUrl = WeixinUtil.getLoginUrl(targetUrl, code);
+        String appId = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "WX_APPID").getConfigValue();
+        String loginUrl = WeixinUtil.getLoginUrl(appId, targetUrl, code);
         try {
             if ("JY123456QWE".equals(request.getParameter("XDebug"))) {
                 loginUrl = String.format(BaseConstant.LOGIN_URL, URLEncoder.encode(targetUrl, "utf-8")) + "&state=" + code + "&XDebug=IYUTERESGBXVCMSWB";
@@ -76,7 +78,9 @@ public class LoginController {
             } else {
                 // 登录成功
                 // 请求用户信息
-                UserAccessToken userAccessToken = WeixinUtil.queryUserAccessToken(code);
+                String appId = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "WX_APPID").getConfigValue();
+                String appSecret = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "WX_APPSECRET").getConfigValue();
+                UserAccessToken userAccessToken = WeixinUtil.queryUserAccessToken(appId, appSecret, code);
                 // TODO 注释DEBUG
                 if ("IYUTERESGBXVCMSWB".equals(request.getParameter("XDebug"))) {
                     userAccessToken = testUserAccessToken();

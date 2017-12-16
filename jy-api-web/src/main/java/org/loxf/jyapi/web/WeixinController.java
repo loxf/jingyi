@@ -1,11 +1,15 @@
 package org.loxf.jyapi.web;
 
+import com.github.wxpay.sdk.WXPay;
+import com.github.wxpay.sdk.WXPayUtil;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.loxf.jyadmin.base.bean.BaseResult;
 import org.loxf.jyadmin.base.constant.BaseConstant;
-import org.loxf.jyadmin.base.util.weixin.WeixinUtil;
 import org.loxf.jyadmin.client.dto.OrderDto;
+import org.loxf.jyadmin.client.service.AccountService;
 import org.loxf.jyadmin.client.service.OrderService;
+import org.loxf.jyapi.util.ConfigUtil;
+import org.loxf.jyapi.util.WeixinPayConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +31,8 @@ public class WeixinController {
 
     @Autowired
     private OrderService orderService;
+    @Autowired
+    private AccountService accountService;
 
     /**
      * 接入微信接口
@@ -41,10 +47,11 @@ public class WeixinController {
     @ResponseBody
     public String apiAccess(String signature, String timestamp, String nonce, String echostr) {
         // 1）将token、timestamp、nonce三个参数进行字典序排序
+        String wxToken = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "WX_TOKEN").getConfigValue();
         ArrayList<String> list = new ArrayList<String>();
         list.add(nonce);
         list.add(timestamp);
-        list.add(BaseConstant.WX_TOKEN);
+        list.add(wxToken);
         Collections.sort(list);
         //2）将三个参数字符串拼接成一个字符串进行sha1加密
         String ret = DigestUtils.shaHex(list.get(0) + list.get(1) + list.get(2));
@@ -74,11 +81,10 @@ public class WeixinController {
             //------------------------------
             //处理业务
             //------------------------------
-            BaseResult<Map<String, String>> notifyMapResult = WeixinUtil.payNotifySign(notifyData.toString());
+            BaseResult<Map<String, String>> notifyMapResult = payNotifySign(notifyData.toString());
             if (notifyMapResult.getCode() == BaseConstant.SUCCESS) {
                 Map<String, String> notifyMap = notifyMapResult.getData();
                 String out_trade_no = notifyMap.get("out_trade_no");// 交易订单ID
-                String attach = notifyMap.get("attach");// 商家数据包
                 String transaction_id = notifyMap.get("transaction_id");// 微信支付订单
                 String total_fee = notifyMap.get("total_fee");// 订单金额，单位为分
                 // 获取订单
@@ -87,11 +93,13 @@ public class WeixinController {
                     resXml = createResp(FAIL, "获取商户订单失败");
                 } else {
                     OrderDto orderDto = orderDtoBaseResult.getData();
+                    accountService.reduceByThird(orderDto.getCustId(), orderDto.getOrderMoney(), orderDto.getBp(),
+                            orderDto.getOrderId(), orderDto.getOrderName());
                     long orderMoney = orderDto.getOrderMoney().multiply(new BigDecimal(100)).longValue();
                     if(orderMoney!=Long.parseLong(total_fee)){
                         resXml = createResp(FAIL, "订单金额不一致");
                     }
-                    BaseResult completeOrderResult = orderService.completeOrder(out_trade_no, 3, "");
+                    BaseResult completeOrderResult = orderService.completeOrder(out_trade_no, transaction_id,3, "");
                     resXml = createResp(completeOrderResult.getCode()==BaseConstant.SUCCESS?SUCCESS:FAIL,
                             completeOrderResult.getMsg());
                 }
@@ -120,5 +128,21 @@ public class WeixinController {
     private String createResp(String code, String msg) {
         return "<xml>" + "<return_code><![CDATA[" + code + "]]></return_code>"
                 + "<return_msg><![CDATA[" + msg + "]]></return_msg>" + "</xml> ";
+    }
+
+    public static BaseResult<Map<String, String>> payNotifySign(String notifyData) throws Exception {
+        Map<String, String> notifyMap = WXPayUtil.xmlToMap(notifyData);  // 转换成map
+        if(notifyMap.get("result_code").equals("SUCCESS")) {
+            WeixinPayConfig config = new WeixinPayConfig();
+            WXPay wxpay = new WXPay(config);
+            if (wxpay.isPayResultNotifySignatureValid(notifyMap)) {
+                // 签名正确
+                return new BaseResult<>(notifyMap);
+            } else {
+                return new BaseResult<>(BaseConstant.FAILED, "签名校验失败:" + notifyMap.get("err_code"));
+            }
+        } else {
+            return new BaseResult<>(BaseConstant.FAILED, "微信端返回err_code:" + notifyMap.get("err_code"));
+        }
     }
 }
