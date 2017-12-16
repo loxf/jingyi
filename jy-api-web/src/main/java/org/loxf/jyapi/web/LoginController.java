@@ -32,6 +32,7 @@ import java.util.Random;
 @Controller
 public class LoginController {
     private static Logger logger = LoggerFactory.getLogger(LoginController.class);
+    private static String defaultHeaderImg = "https://www.jingyizaixian.com/imageServer/SYSTEM/default_header.png";
 
     @Autowired
     private JedisUtil jedisUtil;
@@ -144,7 +145,11 @@ public class LoginController {
         //处理微信用户信息
         CustDto custDto = new CustDto();
         BeanUtils.copyProperties(wxUserInfo, custDto);
-        custDto.setHeadImgUrl(wxUserInfo.getHeadimgurl());
+        if(StringUtils.isBlank(wxUserInfo.getHeadimgurl())) {
+            custDto.setHeadImgUrl(defaultHeaderImg);
+        } else {
+            custDto.setHeadImgUrl(wxUserInfo.getHeadimgurl());
+        }
         custDto.setNickName(wxUserInfo.getNickname());
         BaseResult<CustDto> baseResult = custService.queryCustByOpenId(wxUserInfo.getOpenid());
         // 计算token失效时间
