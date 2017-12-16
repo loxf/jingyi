@@ -5,6 +5,7 @@ import com.github.wxpay.sdk.WXPayUtil;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.loxf.jyadmin.base.bean.BaseResult;
 import org.loxf.jyadmin.base.constant.BaseConstant;
+import org.loxf.jyadmin.base.util.JedisUtil;
 import org.loxf.jyadmin.client.dto.OrderDto;
 import org.loxf.jyadmin.client.service.AccountService;
 import org.loxf.jyadmin.client.service.OrderService;
@@ -33,6 +34,8 @@ public class WeixinController {
     private OrderService orderService;
     @Autowired
     private AccountService accountService;
+    @Autowired
+    private JedisUtil jedisUtil;
 
     /**
      * 接入微信接口
@@ -85,23 +88,35 @@ public class WeixinController {
             if (notifyMapResult.getCode() == BaseConstant.SUCCESS) {
                 Map<String, String> notifyMap = notifyMapResult.getData();
                 String out_trade_no = notifyMap.get("out_trade_no");// 交易订单ID
-                String transaction_id = notifyMap.get("transaction_id");// 微信支付订单
-                String total_fee = notifyMap.get("total_fee");// 订单金额，单位为分
-                // 获取订单
-                BaseResult<OrderDto> orderDtoBaseResult = orderService.queryOrder(out_trade_no);
-                if (orderDtoBaseResult.getCode() == BaseConstant.FAILED||orderDtoBaseResult.getData()==null) {
-                    resXml = createResp(FAIL, "获取商户订单失败");
-                } else {
-                    OrderDto orderDto = orderDtoBaseResult.getData();
-                    accountService.reduceByThird(orderDto.getCustId(), orderDto.getOrderMoney(), orderDto.getBp(),
-                            orderDto.getOrderId(), orderDto.getOrderName());
-                    long orderMoney = orderDto.getOrderMoney().multiply(new BigDecimal(100)).longValue();
-                    if(orderMoney!=Long.parseLong(total_fee)){
-                        resXml = createResp(FAIL, "订单金额不一致");
+                String key = "WEIXIN_CALLBACK_" + out_trade_no;
+                if(jedisUtil.setnx(key, "true", 60)>0) {
+                    String transaction_id = notifyMap.get("transaction_id");// 微信支付订单
+                    String total_fee = notifyMap.get("total_fee");// 订单金额，单位为分
+                    // 获取订单
+                    BaseResult<OrderDto> orderDtoBaseResult = orderService.queryOrder(out_trade_no);
+                    if (orderDtoBaseResult.getCode() == BaseConstant.FAILED || orderDtoBaseResult.getData() == null) {
+                        resXml = createResp(FAIL, "获取商户订单失败");
+                    } else {
+                        OrderDto orderDto = orderDtoBaseResult.getData();
+                        if (orderDto.getStatus() == 3) {
+                            resXml = createResp(SUCCESS, "处理成功");
+                        } else {
+                            BaseResult accountResult = accountService.reduceByThird(orderDto.getCustId(), orderDto.getOrderMoney(), orderDto.getBp(),
+                                    orderDto.getOrderId(), orderDto.getOrderName());
+                            if(accountResult.getCode()==BaseConstant.SUCCESS) {
+                                long orderMoney = orderDto.getOrderMoney().multiply(new BigDecimal(100)).longValue();
+                                if (orderMoney != Long.parseLong(total_fee)) {
+                                    resXml = createResp(FAIL, "订单金额不一致");
+                                }
+                                BaseResult completeOrderResult = orderService.completeOrder(out_trade_no, transaction_id, 3, "");
+                                resXml = createResp(completeOrderResult.getCode() == BaseConstant.SUCCESS ? SUCCESS : FAIL,
+                                        completeOrderResult.getMsg());
+                            } else {
+                                resXml = createResp(FAIL, accountResult.getMsg());
+                            }
+                        }
                     }
-                    BaseResult completeOrderResult = orderService.completeOrder(out_trade_no, transaction_id,3, "");
-                    resXml = createResp(completeOrderResult.getCode()==BaseConstant.SUCCESS?SUCCESS:FAIL,
-                            completeOrderResult.getMsg());
+                    jedisUtil.del(key);
                 }
             } else {
                 resXml = createResp(FAIL, notifyMapResult.getMsg());
@@ -111,6 +126,7 @@ public class WeixinController {
             resXml = createResp(FAIL, e.getMessage());
         } finally {
             try {
+                logger.info("微信回调返回：" + resXml);
                 BufferedOutputStream out = new BufferedOutputStream(
                         response.getOutputStream());
                 out.write(resXml.getBytes());
