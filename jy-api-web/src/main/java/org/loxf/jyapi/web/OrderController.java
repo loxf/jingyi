@@ -232,6 +232,9 @@ public class OrderController {
                 orderDto.setOrderMoney(orderDto.getOrderMoney().subtract((paramOrder.getBp().divide(BigDecimal.TEN))));
             }
         }
+        if(orderDto.getOrderMoney().compareTo(BigDecimal.ZERO)<=0){
+            return new BaseResult(BaseConstant.FAILED, "实际付款金额不能小于0");
+        }
         orderDto.setObjId(paramOrder.getObjId());
         orderDto.setOrderType(paramOrder.getOrderType());
         orderDto.setPayType(paramOrder.getPayType());
