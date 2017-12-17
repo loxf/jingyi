@@ -198,6 +198,23 @@ public class CustController {
             }
             BaseResult verifyResult = verifyCodeService.verify(custDto.getCustId(), verifyCode);
             if(verifyResult.getCode()==BaseConstant.SUCCESS) {
+                if(isChinese==1) {
+                    BaseResult<CustDto> custDtoBaseResult = custService.queryOldCust(phone);
+                    if(custDtoBaseResult.getCode()==BaseConstant.SUCCESS){
+                        // 存在老客户未绑定
+                        CustDto oldCust = custDtoBaseResult.getData();
+                        // 删除老数据
+                        custService.delOldCust(oldCust.getCustId());
+                        JSONObject metaData = new JSONObject();
+                        metaData.put("olduser", true);
+                        custDto.setMetaData(metaData.toJSONString());
+                        custDto.setIsAgent(oldCust.getIsAgent());
+                        custDto.setRecommend(oldCust.getRecommend());
+                        custDto.setFirstLvNbr(oldCust.getFirstLvNbr());
+                        custDto.setSecondLvNbr(oldCust.getSecondLvNbr());
+                        custDto.setAddress(oldCust.getAddress());
+                    }
+                }
                 custDto.setIsChinese(isChinese);
                 custDto.setEmail(email);
                 custDto.setPhone(phone);
