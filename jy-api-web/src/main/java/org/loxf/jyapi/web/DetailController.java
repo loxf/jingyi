@@ -270,12 +270,16 @@ public class DetailController {
                         Object svipPrice = buyPrivi.get("SVIP");
                         if(svipPrice!=null){
                             btns.add(createBtn(BE_SVIP,"升级SVIP", 1, "OFFER002", "400"));
+                        } else {
+                            btns.add(createBtn(BE_SVIP,"不能直接购买", 0, offerId, null));
                         }
+                    } else {
+                        btns.add(createBtn(CANNOT_BUY,"不能直接购买", 0, offerId, null));
                     }
                 } else if(new BigDecimal(price.toString()).compareTo(BigDecimal.ZERO)<=0){
                     // 免费
                     canPlay = true;
-                    btns.add(createBtn(SHARE_FRIEND, "分享好友一起学习", 1, offerId, null));
+                    btns.add(createBtn(CANNOT_BUY, "分享好友一起学习", 1, offerId, null));
                 } else {
                     // 校验是否购买过此套餐
                     if(hasBuy(custId, offerId)){
@@ -296,8 +300,18 @@ public class DetailController {
                 Object price = buyPrivi.get(lv);
                 if(price==null){
                     canPlay = false;
-                    btns.add(createBtn(BE_VIP,"升级VIP", 1, "OFFER001", "299"));
-                    btns.add(createBtn(BE_SVIP,"升级SVIP", 1, "OFFER002", "699"));
+                    int cannotBuy = 0;
+                    if(buyPrivi.containsKey("VIP")) {
+                        btns.add(createBtn(BE_VIP, "升级VIP", 1, "OFFER001", "299"));
+                        cannotBuy++;
+                    }
+                    if(buyPrivi.containsKey("SVIP")) {
+                        btns.add(createBtn(BE_SVIP, "升级SVIP", 1, "OFFER002", "699"));
+                        cannotBuy++;
+                    }
+                    if(cannotBuy==0){
+                        btns.add(createBtn(BE_SVIP,"不能直接购买", 0, offerId, null));
+                    }
                 } else if(new BigDecimal(price.toString()).compareTo(BigDecimal.ZERO)<=0){
                     // 免费
                     canPlay = true;
