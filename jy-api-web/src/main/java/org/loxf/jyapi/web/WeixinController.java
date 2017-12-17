@@ -67,31 +67,36 @@ public class WeixinController {
 
     @RequestMapping("/api/weixin/payorder")
     public void payorder(HttpServletRequest request, HttpServletResponse response) {
-        String resXml = "";
+        //读取参数
+        StringBuffer notifyData = new StringBuffer();
         try {
-            //读取参数
-            StringBuffer notifyData = new StringBuffer();
             InputStream inputStream = request.getInputStream();
             String s;
             BufferedReader in = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
             while ((s = in.readLine()) != null) {
                 notifyData.append(s);
             }
+            logger.debug("微信支付原始报文：" + notifyData.toString());
             in.close();
             inputStream.close();
-            logger.debug("微信支付原始报文：" + notifyData.toString());
-
-            //------------------------------
-            //处理业务
-            //------------------------------
-            BaseResult<Map<String, String>> notifyMapResult = payNotifySign(notifyData.toString());
-            if (notifyMapResult.getCode() == BaseConstant.SUCCESS) {
-                Map<String, String> notifyMap = notifyMapResult.getData();
-                String out_trade_no = notifyMap.get("out_trade_no");// 交易订单ID
-                String key = "WEIXIN_CALLBACK_" + out_trade_no;
-                if(jedisUtil.setnx(key, "true", 60)>0) {
-                    String transaction_id = notifyMap.get("transaction_id");// 微信支付订单
-                    String total_fee = notifyMap.get("total_fee");// 订单金额，单位为分
+        } catch (IOException e) {
+            logger.error("微信支付回调编码错误", e);
+            responseXml(createResp(FAIL, "微信支付回调异常"), response);
+            return;
+        }
+        //------------------------------
+        //处理业务
+        //------------------------------
+        BaseResult<Map<String, String>> notifyMapResult = payNotifySign(notifyData.toString());
+        String resXml = "";
+        if (notifyMapResult.getCode() == BaseConstant.SUCCESS) {
+            Map<String, String> notifyMap = notifyMapResult.getData();
+            String out_trade_no = notifyMap.get("out_trade_no");// 交易订单ID
+            String key = "WEIXIN_CALLBACK_" + out_trade_no;
+            String transaction_id = notifyMap.get("transaction_id");// 微信支付订单
+            String total_fee = notifyMap.get("total_fee");// 订单金额，单位为分
+            if (jedisUtil.setnx(key, "true", 60) > 0) {
+                try {
                     // 获取订单
                     BaseResult<OrderDto> orderDtoBaseResult = orderService.queryOrder(out_trade_no);
                     if (orderDtoBaseResult.getCode() == BaseConstant.FAILED || orderDtoBaseResult.getData() == null) {
@@ -101,42 +106,49 @@ public class WeixinController {
                         if (orderDto.getStatus() == 3) {
                             resXml = createResp(SUCCESS, "处理成功");
                         } else {
-                            BaseResult accountResult = accountService.reduceByThird(orderDto.getCustId(), orderDto.getOrderMoney(), orderDto.getBp(),
-                                    orderDto.getOrderId(), orderDto.getOrderName());
-                            if(accountResult.getCode()==BaseConstant.SUCCESS) {
-                                long orderMoney = orderDto.getOrderMoney().multiply(new BigDecimal(100)).longValue();
-                                if (orderMoney != Long.parseLong(total_fee)) {
-                                    resXml = createResp(FAIL, "订单金额不一致");
-                                }
-                                BaseResult completeOrderResult = orderService.completeOrder(out_trade_no, transaction_id, 3, "");
-                                resXml = createResp(completeOrderResult.getCode() == BaseConstant.SUCCESS ? SUCCESS : FAIL,
-                                        completeOrderResult.getMsg());
+                            long orderMoney = orderDto.getOrderMoney().multiply(new BigDecimal(100)).longValue();
+                            if (orderMoney != Long.parseLong(total_fee)) {
+                                resXml = createResp(FAIL, "订单金额不一致");
                             } else {
-                                resXml = createResp(FAIL, accountResult.getMsg());
+                                // 调用第三方支付记录账单
+                                BaseResult accountResult = accountService.reduceByThird(orderDto.getCustId(), orderDto.getOrderMoney(), orderDto.getBp(),
+                                        orderDto.getOrderId(), orderDto.getOrderName());
+                                if (accountResult.getCode() == BaseConstant.SUCCESS) {
+                                    // 完成订单
+                                    BaseResult completeOrderResult = orderService.completeOrder(out_trade_no, transaction_id, 3, "");
+                                    resXml = createResp(completeOrderResult.getCode() == BaseConstant.SUCCESS ? SUCCESS : FAIL,
+                                            completeOrderResult.getMsg());
+                                } else {
+                                    resXml = createResp(FAIL, accountResult.getMsg());
+                                }
                             }
                         }
                     }
+                } catch (Exception e) {
+                    logger.error("微信支付回调失败：", e);
+                    resXml = createResp(FAIL, "微信支付回调异常");
+                } finally {
                     jedisUtil.del(key);
-                } else {
-                    resXml = createResp(FAIL, "正在处理");
                 }
             } else {
-                resXml = createResp(FAIL, notifyMapResult.getMsg());
+                resXml = createResp(FAIL, "当前订单正在处理");
             }
-        } catch (Exception e) {
-            logger.error("微信支付回调失败：", e);
-            resXml = createResp(FAIL, e.getMessage());
-        } finally {
-            try {
-                logger.info("微信回调返回：" + resXml);
-                BufferedOutputStream out = new BufferedOutputStream(
-                        response.getOutputStream());
-                out.write(resXml.getBytes());
-                out.flush();
-                out.close();
-            } catch (IOException e) {
-                logger.error("返回微信支付回调失败", e);
-            }
+        } else {
+            resXml = createResp(FAIL, notifyMapResult.getMsg());
+        }
+        responseXml(resXml, response);
+    }
+
+    private void responseXml(String resXml, HttpServletResponse response) {
+        try {
+            logger.info("微信回调返回：" + resXml);
+            BufferedOutputStream out = new BufferedOutputStream(
+                    response.getOutputStream());
+            out.write(resXml.getBytes());
+            out.flush();
+            out.close();
+        } catch (IOException e) {
+            logger.error("返回微信支付回调失败", e);
         }
     }
 
@@ -148,19 +160,25 @@ public class WeixinController {
                 + "<return_msg><![CDATA[" + msg + "]]></return_msg>" + "</xml> ";
     }
 
-    public static BaseResult<Map<String, String>> payNotifySign(String notifyData) throws Exception {
-        Map<String, String> notifyMap = WXPayUtil.xmlToMap(notifyData);  // 转换成map
-        if(notifyMap.get("result_code").equals("SUCCESS")) {
-            WeixinPayConfig config = new WeixinPayConfig();
-            WXPay wxpay = new WXPay(config);
-            if (wxpay.isPayResultNotifySignatureValid(notifyMap)) {
-                // 签名正确
-                return new BaseResult<>(notifyMap);
+    public static BaseResult<Map<String, String>> payNotifySign(String notifyData) {
+        Map<String, String> notifyMap = null;  // 转换成map
+        try {
+            notifyMap = WXPayUtil.xmlToMap(notifyData);
+            if (notifyMap.get("result_code").equals("SUCCESS")) {
+                WeixinPayConfig config = new WeixinPayConfig();
+                WXPay wxpay = new WXPay(config);
+                if (wxpay.isPayResultNotifySignatureValid(notifyMap)) {
+                    // 签名正确
+                    return new BaseResult<>(notifyMap);
+                } else {
+                    return new BaseResult<>(BaseConstant.FAILED, "签名校验失败:" + notifyMap.get("err_code"));
+                }
             } else {
-                return new BaseResult<>(BaseConstant.FAILED, "签名校验失败:" + notifyMap.get("err_code"));
+                return new BaseResult<>(BaseConstant.FAILED, "微信端返回err_code:" + notifyMap.get("err_code"));
             }
-        } else {
-            return new BaseResult<>(BaseConstant.FAILED, "微信端返回err_code:" + notifyMap.get("err_code"));
+        } catch (Exception e) {
+            logger.error("微信返回内容转MAP异常", e);
+            return new BaseResult<>(BaseConstant.FAILED, "微信返回内容转MAP异常");
         }
     }
 }

@@ -6,6 +6,7 @@ import com.sun.org.apache.regexp.internal.RE;
 import org.apache.commons.lang3.StringUtils;
 import org.loxf.jyadmin.base.bean.BaseResult;
 import org.loxf.jyadmin.base.constant.BaseConstant;
+import org.loxf.jyadmin.base.util.JedisUtil;
 import org.loxf.jyadmin.client.dto.*;
 import org.loxf.jyadmin.client.service.AccountService;
 import org.loxf.jyadmin.client.service.ActiveService;
@@ -37,6 +38,8 @@ public class OrderController {
     private ActiveService activeService;
     @Autowired
     private AccountService accountService;
+    @Autowired
+    private JedisUtil jedisUtil;
 
     /**
      * 订单确认初始化
@@ -102,11 +105,11 @@ public class OrderController {
         return new BaseResult(result);
     }
 
-    private int getMaxBp(String metaData){
+    private int getMaxBp(String metaData) {
         int maxBp = 0;
-        if(StringUtils.isNotBlank(metaData)){
+        if (StringUtils.isNotBlank(metaData)) {
             JSONObject jsonObject = JSONObject.parseObject(metaData);
-            if(jsonObject.containsKey("MAXBP")){
+            if (jsonObject.containsKey("MAXBP")) {
                 maxBp = jsonObject.getIntValue("MAXBP");
             }
         }
@@ -114,11 +117,11 @@ public class OrderController {
     }
 
     private BigDecimal calculatePrice(String userLevel, String priviStr, BigDecimal salePrice) {
-        if(StringUtils.isBlank(priviStr)){
+        if (StringUtils.isBlank(priviStr)) {
             return salePrice;
         } else {
             JSONObject priviJson = JSONObject.parseObject(priviStr);
-            if(priviJson.containsKey(userLevel)){
+            if (priviJson.containsKey(userLevel)) {
                 return new BigDecimal(priviJson.getString(userLevel));
             } else {
                 return salePrice;
@@ -219,20 +222,20 @@ public class OrderController {
                     orderDto.setTotalMoney(new BigDecimal(price));
                 }
             }
-            if(StringUtils.isNotBlank(metaDataStr)){
+            if (StringUtils.isNotBlank(metaDataStr)) {
                 JSONObject metaDataJson = JSONObject.parseObject(metaDataStr);
                 maxBpUser = metaDataJson.getIntValue("MAXBP");
             }
         }
-        if(paramOrder.getBp()!=null){
-            if(paramOrder.getBp().compareTo(new BigDecimal(maxBpUser))>0){
+        if (paramOrder.getBp() != null) {
+            if (paramOrder.getBp().compareTo(new BigDecimal(maxBpUser)) > 0) {
                 return new BaseResult(BaseConstant.FAILED, "当前商品最多使用" + maxBpUser + "积分");
             } else {
                 // 减去抵扣的积分
                 orderDto.setOrderMoney(orderDto.getOrderMoney().subtract((paramOrder.getBp().divide(BigDecimal.TEN))));
             }
         }
-        if(orderDto.getOrderMoney().compareTo(BigDecimal.ZERO)<=0){
+        if (orderDto.getOrderMoney().compareTo(BigDecimal.ZERO) <= 0) {
             return new BaseResult(BaseConstant.FAILED, "实际付款金额不能小于0");
         }
         orderDto.setObjId(paramOrder.getObjId());
@@ -256,26 +259,36 @@ public class OrderController {
     @ResponseBody
     public BaseResult payOrder(HttpServletRequest request, String orderId, String password) {
         String custId = CookieUtil.getCustId(request);
-        BaseResult<OrderDto> baseResult = orderService.queryOrder(orderId);
-        if (baseResult.getCode() == BaseConstant.FAILED) {
-            return baseResult;
-        }
-        OrderDto orderDto = baseResult.getData();
-        if (orderDto == null) {
-            return new BaseResult(BaseConstant.FAILED, "订单不存在");
-        }
-        try {
-            BaseResult<Boolean> payBaseResult = accountService.reduce(custId, password, orderDto.getOrderMoney(), BigDecimal.ZERO,
-                    orderId, orderDto.getOrderName());
-            if (payBaseResult.getCode() == BaseConstant.SUCCESS && payBaseResult.getData()) {
-                // 支付成功
-                return orderService.completeOrder(orderId, null, 3, "支付成功");
-            } else {
-                return payBaseResult;
+        String key = "PAY_ORDER_" + orderId;
+        if (jedisUtil.setnx(key, "true", 60) > 0) {
+            try {
+                BaseResult<OrderDto> baseResult = orderService.queryOrder(orderId);
+                if (baseResult.getCode() == BaseConstant.FAILED) {
+                    return baseResult;
+                }
+                OrderDto orderDto = baseResult.getData();
+                if (orderDto == null) {
+                    return new BaseResult(BaseConstant.FAILED, "订单不存在");
+                }
+                if (orderDto.getStatus() == 3) {
+                    return new BaseResult(BaseConstant.SUCCESS, "订单处理成功");
+                }
+                BaseResult<Boolean> payBaseResult = accountService.reduce(custId, password, orderDto.getOrderMoney(), BigDecimal.ZERO,
+                        orderId, orderDto.getOrderName());
+                if (payBaseResult.getCode() == BaseConstant.SUCCESS && payBaseResult.getData()){
+                    // 支付成功
+                    return orderService.completeOrder(orderId, null, 3, "支付成功");
+                } else {
+                    return payBaseResult;
+                }
+            } catch (Exception e) {
+                logger.error("支付失败：", e);
+                return new BaseResult(BaseConstant.FAILED, "支付异常，请联系管理员");
+            } finally {
+                jedisUtil.del(key);
             }
-        } catch (Exception e) {
-            logger.error("支付失败：", e);
-            return new BaseResult(BaseConstant.FAILED, "支付异常，请联系管理员");
+        } else {
+            return new BaseResult(BaseConstant.FAILED, "订单处理中");
         }
     }
 }
