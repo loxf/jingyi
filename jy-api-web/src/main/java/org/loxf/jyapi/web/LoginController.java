@@ -134,7 +134,6 @@ public class LoginController {
         data.put("first", BizUtil.createWXKeyWord("尊敬的用户，您已成功登录静怡雅学文化", null));
         data.put("keyword1", BizUtil.createWXKeyWord(custDto.getNickName(), null));
         data.put("keyword2", BizUtil.createWXKeyWord(DateUtils.formatHms(new Date()), null));
-        data.put("keyword3", BizUtil.createWXKeyWord(ip, null));
         data.put("remark", BizUtil.createWXKeyWord("若非本人操作，请联系网站管理员，谢谢。", null));
         result.put("data", data);
         noticeService.insert("WX", custDto.getOpenid(), result);

@@ -279,7 +279,7 @@ public class DetailController {
                 } else if(new BigDecimal(price.toString()).compareTo(BigDecimal.ZERO)<=0){
                     // 免费
                     canPlay = true;
-                    btns.add(createBtn(CANNOT_BUY, "分享好友一起学习", 1, offerId, null));
+                    btns.add(createBtn(SHARE_FRIEND, "分享好友一起学习", 1, offerId, null));
                 } else {
                     // 校验是否购买过此套餐
                     if(hasBuy(custId, offerId)){
@@ -310,7 +310,7 @@ public class DetailController {
                         cannotBuy++;
                     }
                     if(cannotBuy==0){
-                        btns.add(createBtn(BE_SVIP,"不能直接购买", 0, offerId, null));
+                        btns.add(createBtn(CANNOT_BUY,"不能直接购买", 0, offerId, null));
                     }
                 } else if(new BigDecimal(price.toString()).compareTo(BigDecimal.ZERO)<=0){
                     // 免费
