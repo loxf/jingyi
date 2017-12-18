@@ -4,16 +4,17 @@ import com.alibaba.fastjson.JSON;
 import org.apache.commons.lang3.StringUtils;
 import org.loxf.jyadmin.base.bean.BaseResult;
 import org.loxf.jyadmin.base.constant.BaseConstant;
+import org.loxf.jyadmin.base.constant.WxMsgTemplateConstant;
 import org.loxf.jyadmin.base.exception.BizException;
+import org.loxf.jyadmin.base.util.DateUtils;
 import org.loxf.jyadmin.base.util.JedisUtil;
 import org.loxf.jyadmin.base.util.weixin.WeixinUtil;
 import org.loxf.jyadmin.base.util.weixin.bean.UserAccessToken;
 import org.loxf.jyadmin.base.util.weixin.bean.WXUserInfo;
 import org.loxf.jyadmin.client.dto.CustDto;
 import org.loxf.jyadmin.client.service.CustService;
-import org.loxf.jyapi.util.ConfigUtil;
-import org.loxf.jyapi.util.CookieUtil;
-import org.loxf.jyapi.util.UrlUtil;
+import org.loxf.jyadmin.client.service.NoticeService;
+import org.loxf.jyapi.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -26,6 +27,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLEncoder;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
@@ -38,6 +41,8 @@ public class LoginController {
     private JedisUtil jedisUtil;
     @Autowired
     private CustService custService;
+    @Autowired
+    private NoticeService noticeService;
 
     @RequestMapping("/api/login")
     public void login(HttpServletRequest request, HttpServletResponse response, String targetUrl) {
@@ -97,6 +102,8 @@ public class LoginController {
                         Map<String, String> paramMap = UrlUtil.URLRequest(targetUrl);
                         CustDto custDto = settingUser(request, response, paramMap.get("recommend"), userAccessToken, wxUserInfo);
                         try {
+                            // 登录通知
+                            notice(custDto, IPUtil.getIpAddr(request));
                             response.sendRedirect(targetUrl);
                         } catch (IOException e) {
                             logger.error("登录后跳转页面失败", e);
@@ -115,6 +122,22 @@ public class LoginController {
     @ResponseBody
     public BaseResult<CustDto> getUserInfo(HttpServletRequest request, HttpServletResponse response) {
         return new BaseResult<>(CookieUtil.getCust(request));
+    }
+
+    private void notice(CustDto custDto, String ip){
+        Map result = new HashMap();
+        result.put("touser", custDto.getOpenid());
+        result.put("template_id", WxMsgTemplateConstant.LOGIN);
+        result.put("url", BaseConstant.JYZX_INDEX_URL);
+        result.put("topcolor", "#00868B");
+        Map data = new HashMap();
+        data.put("first", BizUtil.createWXKeyWord("尊敬的用户，您已成功登录静怡雅学文化", null));
+        data.put("keyword1", BizUtil.createWXKeyWord(custDto.getNickName(), null));
+        data.put("keyword2", BizUtil.createWXKeyWord(DateUtils.formatHms(new Date()), null));
+        data.put("keyword3", BizUtil.createWXKeyWord(ip, null));
+        data.put("remark", BizUtil.createWXKeyWord("若非本人操作，请联系网站管理员，谢谢。", null));
+        result.put("data", data);
+        noticeService.insert("WX", custDto.getOpenid(), result);
     }
 
     private UserAccessToken testUserAccessToken() {
