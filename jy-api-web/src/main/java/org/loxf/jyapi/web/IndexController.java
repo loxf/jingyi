@@ -172,6 +172,21 @@ public class IndexController {
                     }
                     jsonObject.put("teachers", teacherStr);
                 }
+                String buyPrivi = tmp.getBuyPrivi();
+                if(StringUtils.isNotBlank(buyPrivi)){
+                    JSONObject buyPriviJson = JSON.parseObject(buyPrivi);
+                    if(buyPriviJson.containsKey("NONE")&&buyPriviJson.getIntValue("NONE")==0){
+                        jsonObject.put("freeType", "NONE");
+                    } else if(buyPriviJson.containsKey("VIP")&&buyPriviJson.getIntValue("VIP")==0){
+                        jsonObject.put("freeType", "VIP");
+                    } else if(buyPriviJson.containsKey("SVIP")&&buyPriviJson.getIntValue("SVIP")==0){
+                        jsonObject.put("freeType", "SVIP");
+                    } else {
+                        jsonObject.put("freeType", "");
+                    }
+
+                }
+                jsonObject.put("price", tmp.getSaleMoney().toPlainString());
                 list.add(jsonObject);
             }
         }
