@@ -103,7 +103,7 @@ public class LoginController {
                         CustDto custDto = settingUser(request, response, paramMap.get("recommend"), userAccessToken, wxUserInfo);
                         try {
                             // 登录通知
-                            notice(custDto, IPUtil.getIpAddr(request));
+                            // notice(custDto, IPUtil.getIpAddr(request));
                             response.sendRedirect(targetUrl);
                         } catch (IOException e) {
                             logger.error("登录后跳转页面失败", e);
@@ -123,7 +123,7 @@ public class LoginController {
     public BaseResult<CustDto> getUserInfo(HttpServletRequest request, HttpServletResponse response) {
         return new BaseResult<>(CookieUtil.getCust(request));
     }
-
+/*
     private void notice(CustDto custDto, String ip){
         Map result = new HashMap();
         result.put("touser", custDto.getOpenid());
@@ -134,10 +134,10 @@ public class LoginController {
         data.put("first", BizUtil.createWXKeyWord("尊敬的用户，您已成功登录静怡雅学文化", null));
         data.put("keyword1", BizUtil.createWXKeyWord(custDto.getNickName(), null));
         data.put("keyword2", BizUtil.createWXKeyWord(DateUtils.formatHms(new Date()), null));
-        data.put("remark", BizUtil.createWXKeyWord("若非本人操作，请联系网站管理员，谢谢。", null));
+        data.put("remark", BizUtil.createWXKeyWord("若非本人操作，请联系班主任，谢谢。", null));
         result.put("data", data);
         noticeService.insert("WX", custDto.getOpenid(), result);
-    }
+    }*/
 
     private UserAccessToken testUserAccessToken() {
         UserAccessToken accessToken = new UserAccessToken();

@@ -7,10 +7,13 @@ import org.loxf.jyadmin.base.bean.BaseResult;
 import org.loxf.jyadmin.base.bean.PageResult;
 import org.loxf.jyadmin.base.bean.Pager;
 import org.loxf.jyadmin.base.constant.BaseConstant;
+import org.loxf.jyadmin.base.constant.WxMsgTemplateConstant;
 import org.loxf.jyadmin.base.util.DateUtils;
 import org.loxf.jyadmin.base.util.JedisUtil;
+import org.loxf.jyadmin.base.util.SpringApplicationContextUtil;
 import org.loxf.jyadmin.client.dto.*;
 import org.loxf.jyadmin.client.service.*;
+import org.loxf.jyapi.util.BizUtil;
 import org.loxf.jyapi.util.CookieUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,8 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Controller
 public class CustController {
@@ -43,6 +45,8 @@ public class CustController {
     private CustBpDetailService custBpDetailService;
     @Autowired
     private WatchRecordService watchRecordService;
+    @Autowired
+    private NoticeService noticeService;
 
     /**
      * 初始化接口
@@ -232,6 +236,21 @@ public class CustController {
         return new BaseResult(BaseConstant.FAILED, "用户已绑定，不能重复绑定");
     }
 
+    /**
+     * 用户绑定通知
+     * @param openid
+     * @param nickname
+     * @param contact
+     */
+    public void sendUserBindNotice( String openid, String nickname, String contact){
+        Map data = new HashMap();
+        data.put("first", BizUtil.createWXKeyWord("亲爱的会员，您已使用" + contact + "绑定", null));
+        data.put("keyword1", BizUtil.createWXKeyWord(nickname, "#FF3030"));
+        data.put("keyword2", BizUtil.createWXKeyWord(DateUtils.formatHms(new Date()), null));
+        data.put("remark", BizUtil.createWXKeyWord("若非本人操作，请联系班主任，谢谢。", null));
+        noticeService.insert("WX", openid, BizUtil.createWxMsgMap(WxMsgTemplateConstant.BIND_USER,
+                openid, data, BaseConstant.JYZX_INDEX_URL));
+    }
     /**
      * 观看记录
      *

@@ -161,10 +161,13 @@ public class OrderController {
      */
     @RequestMapping("/api/createOrder")
     @ResponseBody
-    public BaseResult createOrder(HttpServletRequest request, OrderDto paramOrder) {
+    public BaseResult createOrder(HttpServletRequest request, OrderDto paramOrder,String attrListStr) {
         if (StringUtils.isBlank(paramOrder.getObjId()) || paramOrder.getOrderType() == null
                 || paramOrder.getPayType() == null) {
             return new BaseResult(BaseConstant.FAILED, "关键参数缺失");
+        }
+        if(StringUtils.isNotBlank(attrListStr)){
+            paramOrder.setAttrList(JSON.parseArray(attrListStr, OrderAttrDto.class));
         }
         CustDto custDto = CookieUtil.getCust(request);
         String lv = custDto.getUserLevel();
@@ -273,8 +276,8 @@ public class OrderController {
                 if (orderDto.getStatus() == 3) {
                     return new BaseResult(BaseConstant.SUCCESS, "订单处理成功");
                 }
-                BaseResult<Boolean> payBaseResult = accountService.reduce(custId, password, orderDto.getOrderMoney(), BigDecimal.ZERO,
-                        orderId, orderDto.getOrderName());
+                BaseResult<Boolean> payBaseResult = accountService.reduce(custId, password, orderDto.getOrderMoney(),
+                        orderDto.getBp(), orderId, orderDto.getOrderName());
                 if (payBaseResult.getCode() == BaseConstant.SUCCESS && payBaseResult.getData()){
                     // 支付成功
                     return orderService.completeOrder(orderId, null, 3, "支付成功");
