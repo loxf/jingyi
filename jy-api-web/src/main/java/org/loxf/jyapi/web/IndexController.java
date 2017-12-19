@@ -148,7 +148,6 @@ public class IndexController {
         if(StringUtils.isNotBlank(sortType) && sortType.equals("HOT")){
             offerDto.setSortType("HOT");
         }
-        offerDto.setStatus(1);
         PageResult<OfferDto> offerDtoPageResult = offerService.pager(offerDto, 2);
         List<JSONObject> list = new ArrayList<>();
         if(offerDtoPageResult.getTotal()>0){
@@ -178,11 +177,11 @@ public class IndexController {
                 String buyPrivi = tmp.getBuyPrivi();
                 if(StringUtils.isNotBlank(buyPrivi)){
                     JSONObject buyPriviJson = JSON.parseObject(buyPrivi);
-                    if(buyPriviJson.containsKey("NONE")&&buyPriviJson.getIntValue("NONE")==0){
+                    if(buyPriviJson.containsKey("NONE")&&buyPriviJson.getDouble("NONE")==0d){
                         jsonObject.put("freeType", "NONE");
-                    } else if(buyPriviJson.containsKey("VIP")&&buyPriviJson.getIntValue("VIP")==0){
+                    } else if(buyPriviJson.containsKey("VIP")&&buyPriviJson.getDouble("VIP")==0d){
                         jsonObject.put("freeType", "VIP");
-                    } else if(buyPriviJson.containsKey("SVIP")&&buyPriviJson.getIntValue("SVIP")==0){
+                    } else if(buyPriviJson.containsKey("SVIP")&&buyPriviJson.getDouble("SVIP")==0d){
                         jsonObject.put("freeType", "SVIP");
                     } else {
                         jsonObject.put("freeType", "");
