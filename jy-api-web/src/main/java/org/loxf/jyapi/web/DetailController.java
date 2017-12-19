@@ -72,7 +72,7 @@ public class DetailController {
             JSONArray btns = new JSONArray();
             String buyPriviStr = offerDto.getBuyPrivi();
             // 判断视频是否可播放，获取页面展现的按钮 1/用户已购买此套餐，2/此套餐对VIP/SVIP用户免费
-            boolean canPlay = dealOfferBtn(custDto.getCustId(), custDto.getUserLevel(), offerId, buyPriviStr, btns);
+            boolean canPlay = dealOfferBtn("OFFER", custDto.getCustId(), custDto.getUserLevel(), offerId, buyPriviStr, btns);
 
             result.put("isPlay", (canPlay?1:0));
             result.put("btns", btns);
@@ -179,7 +179,7 @@ public class DetailController {
         // 页面展现按钮
         JSONArray btns = new JSONArray();
         String buyPriviStr = activeDto.getActivePrivi();
-        dealOfferBtn(custDto.getCustId(), custDto.getUserLevel(), activeId, buyPriviStr, btns);
+        dealOfferBtn("ACTIVE", custDto.getCustId(), custDto.getUserLevel(), activeId, buyPriviStr, btns);
         result.put("btns", btns);
         return new BaseResult(result);
     }
@@ -212,7 +212,7 @@ public class DetailController {
             JSONArray btns = new JSONArray();
             String buyPriviStr = offerDto.getBuyPrivi();
             // 判断视频是否可播放，获取页面展现的按钮 1/用户已购买此套餐，2/此套餐对VIP/SVIP用户免费
-            boolean canPlay = dealOfferBtn(custDto.getCustId(), custDto.getUserLevel(), offerId, buyPriviStr, btns);
+            boolean canPlay = dealOfferBtn("CLASS", custDto.getCustId(), custDto.getUserLevel(), offerId, buyPriviStr, btns);
 
             result.put("isPlay", (canPlay?1:0));
             result.put("btns", btns);
@@ -251,12 +251,13 @@ public class DetailController {
         return buyBtn;
     }
 
-    private boolean dealOfferBtn(String custId, String lv, String offerId, String buyPriviStr, JSONArray btns){
+    private boolean dealOfferBtn(String type, String custId, String lv, String offerId, String buyPriviStr, JSONArray btns){
         boolean canPlay = false ;
+        String str = type.equals("ACTIVE")?"报名":"购买";
         if(StringUtils.isBlank(buyPriviStr)){
             // 不能单独购买
             canPlay = false;
-            btns.add(createBtn(CANNOT_BUY,"不能直接购买",0, offerId, null));
+            btns.add(createBtn(CANNOT_BUY,"不能直接" + str,0, offerId, null));
         } else {
             // 可以购买
             JSONObject buyPrivi = JSON.parseObject(buyPriviStr);
@@ -271,10 +272,10 @@ public class DetailController {
                         if(svipPrice!=null){
                             btns.add(createBtn(BE_SVIP,"升级SVIP", 1, "OFFER002", "400"));
                         } else {
-                            btns.add(createBtn(BE_SVIP,"不能直接购买", 0, offerId, null));
+                            btns.add(createBtn(BE_SVIP,"不能直接" + str, 0, offerId, null));
                         }
                     } else {
-                        btns.add(createBtn(CANNOT_BUY,"不能直接购买", 0, offerId, null));
+                        btns.add(createBtn(CANNOT_BUY,"不能直接" + str, 0, offerId, null));
                     }
                 } else if(new BigDecimal(price.toString()).compareTo(BigDecimal.ZERO)<=0){
                     // 免费
@@ -289,7 +290,7 @@ public class DetailController {
                     } else {
                         // 需要购买
                         canPlay = false;
-                        btns.add(createBtn(BUY_NOW, "立即购买", 1, offerId, price + ""));
+                        btns.add(createBtn(BUY_NOW, "立即" + str, 1, offerId, price + ""));
                         if(lv.equals("VIP")){
                             btns.add(createBtn(BE_SVIP,"升级SVIP", 1, "OFFER002", "400"));
                         }
@@ -310,7 +311,7 @@ public class DetailController {
                         cannotBuy++;
                     }
                     if(cannotBuy==0){
-                        btns.add(createBtn(CANNOT_BUY,"不能直接购买", 0, offerId, null));
+                        btns.add(createBtn(CANNOT_BUY,"不能直接" + str, 0, offerId, null));
                     }
                 } else if(new BigDecimal(price.toString()).compareTo(BigDecimal.ZERO)<=0){
                     // 免费
@@ -325,7 +326,7 @@ public class DetailController {
                     } else {
                         // 需要购买
                         canPlay = false;
-                        btns.add(createBtn(BUY_NOW,"立即购买",1,  offerId, price + ""));
+                        btns.add(createBtn(BUY_NOW,"立即" + str,1,  offerId, price + ""));
                         btns.add(createBtn(BE_VIP,"升级VIP", 1, "OFFER001", "299"));
                     }
                 }

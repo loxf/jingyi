@@ -160,19 +160,25 @@ public class IndexController {
                 jsonObject.put("offerType", tmp.getOfferType());
                 jsonObject.put("playTime", tmp.getPlayTime());
                 String metaData = tmp.getMetaData();
-                if(StringUtils.isNotBlank(metaData)){
-                    JSONObject metaJson = JSON.parseObject(metaData);
-                    String teacherStr = "";
-                    if(metaJson.containsKey("TEACHER")){
-                        JSONArray teachers = metaJson.getJSONArray("TEACHER");
-                        for(Object o : teachers){
-                            if(StringUtils.isNotBlank(teacherStr)){
-                                teacherStr += ", ";
+                if(tmp.getOfferType().equals("CLASS")) {
+                    if (StringUtils.isNotBlank(metaData)) {
+                        JSONObject metaJson = JSON.parseObject(metaData);
+                        String teacherStr = "";
+                        if (metaJson.containsKey("TEACHER")) {
+                            JSONArray teachers = metaJson.getJSONArray("TEACHER");
+                            for (Object o : teachers) {
+                                if (StringUtils.isNotBlank(teacherStr)) {
+                                    teacherStr += ", ";
+                                }
+                                teacherStr += ((JSONObject) o).get("name");
                             }
-                            teacherStr += ((JSONObject) o ).get("name");
                         }
+                        jsonObject.put("teachers", teacherStr);
+                    } else {
+                        jsonObject.put("teachers", "无");
                     }
-                    jsonObject.put("teachers", teacherStr);
+                } else if(tmp.getOfferType().equals("OFFER"))  {
+                    jsonObject.put("teachers", "见套餐详情");
                 }
                 String buyPrivi = tmp.getBuyPrivi();
                 if(StringUtils.isNotBlank(buyPrivi)){
