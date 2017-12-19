@@ -137,7 +137,10 @@ public class IndexController {
         offerDto.setCatalogId(catalogId);
         if(StringUtils.isNotBlank(filter)) {
             if(filter.equals("NONE") || filter.equals("VIP") || filter.equals("SVIP")) {
-                offerDto.setBuyPrivi("\""+ filter + "\"");
+                JSONObject filterJson = new JSONObject();
+                filterJson.put(filter, "0");
+                String filterStr = filterJson.toJSONString();
+                offerDto.setBuyPrivi(filterStr.substring(1, filterStr.length()-1));
             } else if(filter.equals("CLASS") || filter.equals("OFFER") ){
                 offerDto.setOfferType(filter);
             }
