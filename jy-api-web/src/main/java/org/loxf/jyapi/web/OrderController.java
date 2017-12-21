@@ -8,10 +8,7 @@ import org.loxf.jyadmin.base.bean.BaseResult;
 import org.loxf.jyadmin.base.constant.BaseConstant;
 import org.loxf.jyadmin.base.util.JedisUtil;
 import org.loxf.jyadmin.client.dto.*;
-import org.loxf.jyadmin.client.service.AccountService;
-import org.loxf.jyadmin.client.service.ActiveService;
-import org.loxf.jyadmin.client.service.OfferService;
-import org.loxf.jyadmin.client.service.OrderService;
+import org.loxf.jyadmin.client.service.*;
 import org.loxf.jyapi.util.ConfigUtil;
 import org.loxf.jyapi.util.CookieUtil;
 import org.loxf.jyapi.util.IPUtil;
@@ -30,6 +27,8 @@ import java.util.List;
 @Controller
 public class OrderController {
     private static Logger logger = LoggerFactory.getLogger(OrderController.class);
+    @Autowired
+    private CustService custService;
     @Autowired
     private OrderService orderService;
     @Autowired
@@ -57,7 +56,8 @@ public class OrderController {
         if (StringUtils.isBlank(type)) {
             return new BaseResult(BaseConstant.FAILED, "订单类型为空");
         }
-        CustDto custDto = CookieUtil.getCust(request);
+        String custId = CookieUtil.getCustId(request);
+        CustDto custDto = custService.queryCustByCustId(custId).getData();
         // 当前余额
         BaseResult<JSONObject> balanceBaseResult = accountService.queryAccount(custDto.getCustId());
         if (balanceBaseResult.getCode() == BaseConstant.FAILED) {
@@ -169,7 +169,8 @@ public class OrderController {
         if(StringUtils.isNotBlank(attrListStr)){
             paramOrder.setAttrList(JSON.parseArray(attrListStr, OrderAttrDto.class));
         }
-        CustDto custDto = CookieUtil.getCust(request);
+        String custId = CookieUtil.getCustId(request);
+        CustDto custDto = custService.queryCustByCustId(custId).getData();
         String lv = custDto.getUserLevel();
         // 订单
         OrderDto orderDto = new OrderDto();

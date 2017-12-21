@@ -186,8 +186,16 @@ public class LoginController {
             BaseResult<String> custBaseResult = custService.addCust(custDto, userAccessToken);
             custDto.setCustId(custBaseResult.getData());
         }
+
+        return setCustInfoSessionAndCookie(request, response, custService, jedisUtil, wxUserInfo.getOpenid(), expireSecond);
+    }
+
+
+    public static CustDto setCustInfoSessionAndCookie(HttpServletRequest request, HttpServletResponse response,
+                                                      CustService custService, JedisUtil jedisUtil,
+                                                      String openid, Integer expireSecond) {
         // 获取最新的cust信息
-        CustDto custInfo = custService.queryCustByOpenId(wxUserInfo.getOpenid()).getData();
+        CustDto custInfo = custService.queryCustByOpenId(openid).getData();
         // 生成 系统TOKEN
         String tmp = CookieUtil.TOKEN_PREFIX + CookieUtil.TOKEN_SPLIT + custInfo.getCustId()
                 + CookieUtil.TOKEN_SPLIT + System.currentTimeMillis();
@@ -195,17 +203,15 @@ public class LoginController {
             String token = CookieUtil.encrypt(tmp);
             // 设置cookie session token
             CookieUtil.setSession(request, BaseConstant.USER_COOKIE_NAME, token);
-            jedisUtil.set(token, JSON.toJSONString(custInfo), expireSecond);
-            setUserCookie(response, token, custInfo.getCustId());
+            if(expireSecond!=null) {
+                jedisUtil.set(token, JSON.toJSONString(custInfo), expireSecond);
+            }
+            CookieUtil.setCookie(response, BaseConstant.USER_COOKIE_NAME, token);
+            CookieUtil.setCookie(response, BaseConstant.JY_CUST_ID, custInfo.getCustId());
         } catch (Exception e) {
             logger.error("TOKEN加密失败", e);
         }
         return custInfo;
-    }
-
-    private void setUserCookie(HttpServletResponse response, String token, String custId) {
-        CookieUtil.setCookie(response, BaseConstant.USER_COOKIE_NAME, token);
-        CookieUtil.setCookie(response, BaseConstant.JY_CUST_ID, custId);
     }
 
     /**

@@ -23,6 +23,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.math.BigDecimal;
 import java.util.*;
 
 @Controller
@@ -192,7 +194,9 @@ public class CustController {
      */
     @RequestMapping("/api/cust/bindPhone")
     @ResponseBody
-    public BaseResult bindPhone(HttpServletRequest request, String realName, String email, String phone, Integer isChinese, String verifyCode) {
+    public BaseResult bindPhone(HttpServletRequest request, HttpServletResponse response,
+                                String realName, String email, String phone,
+                                Integer isChinese, String verifyCode) {
         CustDto custDto = CookieUtil.getCust(request);
         if(custDto.getIsChinese()==null) {
             if(isChinese==1 && StringUtils.isBlank(phone)){
@@ -202,32 +206,46 @@ public class CustController {
             }
             BaseResult verifyResult = verifyCodeService.verify(custDto.getCustId(), verifyCode);
             if(verifyResult.getCode()==BaseConstant.SUCCESS) {
-                if(isChinese==1) {
-                    BaseResult<CustDto> custDtoBaseResult = custService.queryOldCust(phone);
-                    if(custDtoBaseResult.getCode()==BaseConstant.SUCCESS){
-                        // 存在老客户未绑定
-                        CustDto oldCust = custDtoBaseResult.getData();
-                        // 删除老数据
-                        custService.delOldCust(oldCust.getCustId());
-                        JSONObject metaData = new JSONObject();
-                        metaData.put("olduser", true);
-                        custDto.setMetaData(metaData.toJSONString());
-                        custDto.setIsAgent(oldCust.getIsAgent());
-                        custDto.setRecommend(oldCust.getRecommend());
-                        custDto.setFirstLvNbr(oldCust.getFirstLvNbr());
-                        custDto.setSecondLvNbr(oldCust.getSecondLvNbr());
-                        custDto.setAddress(oldCust.getAddress());
-                    }
-                }
                 custDto.setIsChinese(isChinese);
                 custDto.setEmail(email);
                 custDto.setPhone(phone);
                 custDto.setRealName(realName);
-                custService.updateCust(custDto);
+                if(isChinese==1) {
+                    BaseResult<CustDto> custDtoBaseResult = custService.queryOldCust(phone);
+                    if(custDtoBaseResult.getCode()==BaseConstant.SUCCESS){
+                        // 存在老客户未绑定，获取老用户信息
+                        CustDto oldCust = custDtoBaseResult.getData();
+                        // 将新账号的信息复制到老账号
+                        oldCust.setNickName(custDto.getNickName());
+                        oldCust.setCountry(custDto.getCountry());
+                        oldCust.setProvince(custDto.getProvince());
+                        oldCust.setCity(custDto.getCity());
+                        oldCust.setSex(custDto.getSex());
+                        oldCust.setHeadImgUrl(custDto.getHeadImgUrl());
+                        oldCust.setPrivilege(custDto.getPrivilege());
+                        oldCust.setOpenid(custDto.getOpenid());
+                        // 更新老用户信息
+                        custService.updateOldCustInfo(oldCust);
+                        // 获取临时新账户
+                        JSONObject tmpAccount = accountService.queryAccount(custDto.getCustId()).getData();
+                        // 合并新账户金额到老账户
+                        if(new BigDecimal(tmpAccount.get("bp").toString()).compareTo(BigDecimal.ZERO)>0 ||
+                                new BigDecimal(tmpAccount.get("balance").toString()).compareTo(BigDecimal.ZERO)>0) {
+                            accountService.increase(oldCust.getCustId(), new BigDecimal(tmpAccount.get("balance").toString()),
+                                    new BigDecimal(tmpAccount.get("bp").toString()), null, "老用户绑定合并", null);
+                        }
+                        // 删除临时客户账户数据
+                        custService.delTmpCust(custDto.getCustId());
+                        accountService.delAccount(custDto.getCustId());
+                    } else {
+                        custService.updateCust(custDto);
+                    }
+                } else {
+                    custService.updateCust(custDto);
+                }
                 // 刷新缓存
-                CustDto custInfo = custService.queryCustByCustId(custDto.getCustId()).getData();
-                String userToken = CookieUtil.getUserToken(request);
-                jedisUtil.set(userToken, JSON.toJSONString(custInfo), 60*60);
+                LoginController.setCustInfoSessionAndCookie(request, response, custService, jedisUtil,
+                        custDto.getOpenid(), null);
                 return new BaseResult();
             } else {
                 return new BaseResult(BaseConstant.FAILED, "验证码错误");

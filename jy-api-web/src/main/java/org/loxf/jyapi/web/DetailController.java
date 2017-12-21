@@ -24,6 +24,8 @@ import java.util.List;
 @Controller
 public class DetailController {
     @Autowired
+    private CustService custService;
+    @Autowired
     private OfferService offerService;
     @Autowired
     private ActiveService activeService;
@@ -45,7 +47,8 @@ public class DetailController {
     @RequestMapping("/api/offer/detail")
     @ResponseBody
     public BaseResult offerDetail(HttpServletRequest request, String offerId){
-        CustDto custDto = CookieUtil.getCust(request);
+        String custId = CookieUtil.getCustId(request);
+        CustDto custDto = custService.queryCustByCustId(custId).getData();
         BaseResult<OfferDto> offerDtoBaseResult = offerService.queryOffer(offerId);
         if(offerDtoBaseResult.getCode()== BaseConstant.FAILED){
             return offerDtoBaseResult;
@@ -139,7 +142,8 @@ public class DetailController {
     @RequestMapping("/api/active/detail")
     @ResponseBody
     public BaseResult activeDetail(HttpServletRequest request, String activeId){
-        CustDto custDto = CookieUtil.getCust(request);
+        String custId = CookieUtil.getCustId(request);
+        CustDto custDto = custService.queryCustByCustId(custId).getData();
         BaseResult<ActiveDto> activeDtoBaseResult = activeService.queryActive(activeId);
         if(activeDtoBaseResult.getCode()== BaseConstant.FAILED){
             return activeDtoBaseResult;
@@ -186,7 +190,8 @@ public class DetailController {
     @RequestMapping("/api/offerClass/detail")
     @ResponseBody
     public BaseResult classDetail(HttpServletRequest request, String offerId){
-        CustDto custDto = CookieUtil.getCust(request);
+        String custId = CookieUtil.getCustId(request);
+        CustDto custDto = custService.queryCustByCustId(custId).getData();
         BaseResult<OfferDto> offerDtoBaseResult = offerService.queryOffer(offerId);
         if(offerDtoBaseResult.getCode()== BaseConstant.FAILED){
             return offerDtoBaseResult;
