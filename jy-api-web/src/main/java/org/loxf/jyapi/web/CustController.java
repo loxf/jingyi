@@ -222,6 +222,7 @@ public class CustController {
                         oldCust.setCity(custDto.getCity());
                         oldCust.setSex(custDto.getSex());
                         oldCust.setHeadImgUrl(custDto.getHeadImgUrl());
+                        oldCust.setRealName(realName);
                         oldCust.setPrivilege(custDto.getPrivilege());
                         oldCust.setOpenid(custDto.getOpenid());
                         // 更新老用户信息

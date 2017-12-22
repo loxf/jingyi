@@ -59,6 +59,7 @@ public class LoginController {
                 }
             }
             jedisUtil.set(code, (System.currentTimeMillis() + 5 * 60 * 1000) + "", 5 * 60);
+            logger.info("登录：" + loginUrl);
             response.sendRedirect(loginUrl);
         } catch (IOException e) {
             logger.error("登录失败", e);
