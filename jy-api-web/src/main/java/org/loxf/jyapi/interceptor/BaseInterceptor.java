@@ -109,8 +109,8 @@ public class BaseInterceptor extends HandlerInterceptorAdapter {
                 return false;
             } else {
                 long startTime = Long.parseLong(tokenARR[2]);
-                // 2H有效期
-                if(System.currentTimeMillis()-startTime>2*60*60*1000){
+                // 24H有效期
+                if(System.currentTimeMillis()-startTime>24*60*60*1000){
                     return false;
                 }
                 String custInfo = SpringApplicationContextUtil.getBean(JedisUtil.class).get(token);
