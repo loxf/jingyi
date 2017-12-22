@@ -88,7 +88,6 @@ public class BaseInterceptor extends HandlerInterceptorAdapter {
         String token = CookieUtil.getUserToken(request);
         if(StringUtils.isBlank(token)){
             if(debug!=null && debug){
-                //TODO 关闭调试模式
                 token = request.getParameter(BaseConstant.USER_COOKIE_NAME);
                 logger.warn("调试模式获取的token:" + token);
                 if(StringUtils.isBlank(token)){

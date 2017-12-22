@@ -82,6 +82,7 @@ public class CookieUtil {
 
     public static void setSession(HttpServletRequest request, String key, Object value){
         request.getSession().setAttribute(key, value);
+        request.getSession().setMaxInactiveInterval(24 * 60 * 60);
     }
 
     public static Object getSession(HttpServletRequest request, String sessionName){

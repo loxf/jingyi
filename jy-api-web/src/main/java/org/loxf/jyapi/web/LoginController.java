@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -41,8 +42,8 @@ public class LoginController {
     private JedisUtil jedisUtil;
     @Autowired
     private CustService custService;
-    @Autowired
-    private NoticeService noticeService;
+    @Value("#{configProperties['SYSTEM.DEBUG']}")
+    private Boolean debug;
 
     @RequestMapping("/api/login")
     public void login(HttpServletRequest request, HttpServletResponse response, String targetUrl) {
@@ -87,15 +88,13 @@ public class LoginController {
                 String appId = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "WX_APPID").getConfigValue();
                 String appSecret = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "WX_APPSECRET").getConfigValue();
                 UserAccessToken userAccessToken = WeixinUtil.queryUserAccessToken(appId, appSecret, code);
-                // TODO 注释DEBUG
-                if ("IYUTERESGBXVCMSWB".equals(request.getParameter("XDebug"))) {
+                if (debug!=null && debug && "IYUTERESGBXVCMSWB".equals(request.getParameter("XDebug"))) {
                     userAccessToken = testUserAccessToken();
                 }
                 if (userAccessToken != null) {
                     // 获取用户登录token成功 拉取用户信息
                     WXUserInfo wxUserInfo = WeixinUtil.queryUserInfo(userAccessToken.getAccess_token(), userAccessToken.getOpenid());
-                    // TODO 注释DEBUG
-                    if ("IYUTERESGBXVCMSWB".equals(request.getParameter("XDebug"))) {
+                    if (debug!=null && debug && "IYUTERESGBXVCMSWB".equals(request.getParameter("XDebug"))) {
                         wxUserInfo = testWXUserInfo();
                     }
                     if (wxUserInfo != null) {
