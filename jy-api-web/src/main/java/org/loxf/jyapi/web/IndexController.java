@@ -219,7 +219,7 @@ public class IndexController {
         Pager pager = new Pager(page, size);
         activeDto.setPager(pager);
         activeDto.setStatus(1);
-        activeDto.setStartDate(DateUtils.format(new Date()));
+        activeDto.setStartDate(DateUtils.formatHms(new Date()));
         PageResult<ActiveDto> pageResult = activeService.pager(activeDto);
         List<JSONObject> result = new ArrayList<>();
         if(pageResult.getTotal()>0) {
