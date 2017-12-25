@@ -73,7 +73,7 @@ public class OrderController {
     }
 
     private BaseResult setOfferList(String userLevel, String offerId, String type, JSONObject result) {
-        String[] objs = offerId.split(",");
+        String[] objs = offerId.replaceAll("-", ",").split(",");
         List<JSONObject> offerList = new ArrayList<>();
         for (String objId : objs) {
             if (type.equals("ACTIVE")) {
@@ -281,7 +281,12 @@ public class OrderController {
                         orderDto.getBp(), orderId, orderDto.getOrderName());
                 if (payBaseResult.getCode() == BaseConstant.SUCCESS && payBaseResult.getData()){
                     // 支付成功
-                    return orderService.completeOrder(orderId, null, 3, "支付成功");
+                    BaseResult baseResult1 = orderService.completeOrder(orderId, null, 3, "支付成功");
+                    if(baseResult.getCode()==BaseConstant.SUCCESS && orderDto.getOrderType()==3){
+                        // 如果购买的是VIP，设置用户信息刷新标志
+                        jedisUtil.set("REFRESH_CUST_INFO_" + orderDto.getCustId(), "true", 60);
+                    }
+                    return baseResult1;
                 } else {
                     return payBaseResult;
                 }

@@ -14,6 +14,6 @@
     <bean id="wxAccessTokenFreshJob" class="org.loxf.jyapi.thread.WxAccessTokenFreshJob">
         <constructor-arg name="expireLockMSecd" value="10" /><!-- 锁失效时间 -->
         <constructor-arg name="lockTimeout" value="10" /><!-- 获取锁的等待时间 -->
-        <constructor-arg name="period" value="10000" /><!-- 业务执行间隔时间 milliseconds -->
+        <constructor-arg name="period" value="60000" /><!-- 业务执行间隔时间 milliseconds -->
     </bean>
 </beans>

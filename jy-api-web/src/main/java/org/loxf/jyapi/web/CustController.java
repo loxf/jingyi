@@ -202,7 +202,7 @@ public class CustController {
             if(isChinese==1 && StringUtils.isBlank(phone)){
                 return new BaseResult(BaseConstant.FAILED, "国内用户请填写手机号码");
             } else if(isChinese==2 && StringUtils.isBlank(email)){
-                return new BaseResult(BaseConstant.FAILED, "国内用户请填写邮箱");
+                return new BaseResult(BaseConstant.FAILED, "海外用户请填写电子邮箱");
             }
             BaseResult verifyResult = verifyCodeService.verify(custDto.getCustId(), verifyCode);
             if(verifyResult.getCode()==BaseConstant.SUCCESS) {
@@ -244,6 +244,7 @@ public class CustController {
                 } else {
                     custService.updateCust(custDto);
                 }
+                sendUserBindNotice(custDto.getOpenid(), custDto.getNickName(), (isChinese==1?phone:email));
                 // 刷新缓存
                 LoginController.setCustInfoSessionAndCookie(request, response, custService, jedisUtil,
                         custDto.getOpenid(), null);

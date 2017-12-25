@@ -8,6 +8,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.loxf.jyadmin.base.bean.BaseResult;
 import org.loxf.jyadmin.base.constant.BaseConstant;
 import org.loxf.jyadmin.base.util.DateUtils;
+import org.loxf.jyadmin.base.util.JedisUtil;
 import org.loxf.jyadmin.client.dto.*;
 import org.loxf.jyadmin.client.service.*;
 import org.loxf.jyapi.util.ConfigUtil;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 @Controller
@@ -37,6 +39,8 @@ public class DetailController {
     private ActiveCustListService activeCustListService;
     @Autowired
     private ProvinceAndCityService provinceAndCityService;
+    @Autowired
+    private JedisUtil jedisUtil;
 
     private static String CANNOT_BUY = "CANNOT_BUY";
     private static String BUY_NOW = "BUY_NOW";
@@ -256,83 +260,124 @@ public class DetailController {
         return buyBtn;
     }
 
-    private boolean dealOfferBtn(String type, String custId, String lv, String offerId, String buyPriviStr, JSONArray btns){
-        boolean canPlay = false ;
-        String str = type.equals("ACTIVE")?"报名":"购买";
-        if(StringUtils.isBlank(buyPriviStr)){
-            // 不能单独购买
-            canPlay = false;
-            btns.add(createBtn(CANNOT_BUY,"不能直接" + str,0, offerId, null));
+    private OfferDto queryVipInfo(String type){
+        String offerId;
+        String key ;
+        if(type.equals("VIP")) {
+            offerId = "OFFER001";
+            key = "OFFER_VIP";
         } else {
-            // 可以购买
-            JSONObject buyPrivi = JSON.parseObject(buyPriviStr);
-            if(lv.equals("VIP")||lv.equals("SVIP")){
-                // 会员
-                Object price = buyPrivi.get(lv);
-                if(price==null){
-                    canPlay = false;
-                    if(lv.equals("VIP")){
-                        // 查看SVIP是否可以购买
-                        Object svipPrice = buyPrivi.get("SVIP");
-                        if(svipPrice!=null){
-                            btns.add(createBtn(BE_SVIP,"升级SVIP", 1, "OFFER002", "400"));
+            offerId = "OFFER002";
+            key = "OFFER_SVIP";
+        }
+        OfferDto offerDto = null;
+        String offerStr = jedisUtil.get(key);
+        if(StringUtils.isBlank(offerStr)){
+            // 从数据库获取
+            offerDto = offerService.queryOffer(offerId).getData();
+            jedisUtil.set(key, JSONObject.toJSONString(offerDto), 60*60);// 一小时有效期
+        } else {
+            offerDto = JSONObject.parseObject(offerStr, OfferDto.class);
+        }
+        return offerDto;
+    }
+
+    private boolean dealOfferBtn(String type, String custId, String lv, String offerId, String buyPriviStr, JSONArray btns){
+        boolean canPlay ;
+        String str = type.equals("ACTIVE")?"报名":"购买";
+        // 判断是否购买过
+        if(hasBuy(custId, offerId, type)){
+            // 判断是否购买过CLASS/ACTIVE或包含CLASS/ACTIVE的套餐
+            canPlay = true;
+            btns.add(createBtn(SHARE_FRIEND, "分享好友一起学习", 1, offerId, null));
+        } else {
+            // 如果没有购买过，判断是否可以购买
+            if (StringUtils.isBlank(buyPriviStr)) {
+                // 不能单独购买
+                canPlay = false;
+                btns.add(createBtn(CANNOT_BUY, "不能直接" + str, 0, offerId, null));
+            } else {
+                // 可以购买
+                JSONObject buyPrivi = JSON.parseObject(buyPriviStr);
+                if (lv.equals("VIP") || lv.equals("SVIP")) {
+                    // 会员
+                    Object price = buyPrivi.get(lv);
+                    if (price == null) {
+                        // 未配置vip的价格，不能购买
+                        canPlay = false;
+                        if (lv.equals("VIP")) {
+                            // 查看SVIP是否可以购买
+                            Object svipPrice = buyPrivi.get("SVIP");
+                            if (svipPrice != null) {
+                                // 查询SVIP信息
+                                OfferDto offerDto = queryVipInfo("SVIP");
+                                String svipBuyPrivi = offerDto.getBuyPrivi();
+                                JSONObject svipBuyJson = JSONObject.parseObject(svipBuyPrivi);
+                                btns.add(createBtn(BE_SVIP, "升级SVIP", 1,
+                                        "OFFER002", svipBuyJson.get(lv).toString()));
+                            } else {
+                                btns.add(createBtn(CANNOT_BUY, "不能直接" + str, 0, offerId, null));
+                            }
                         } else {
-                            btns.add(createBtn(BE_SVIP,"不能直接" + str, 0, offerId, null));
+                            btns.add(createBtn(CANNOT_BUY, "不能直接" + str, 0, offerId, null));
                         }
+                    } else if (new BigDecimal(price.toString()).compareTo(BigDecimal.ZERO) <= 0) {
+                        // 免费
+                        canPlay = true;
+                        btns.add(createBtn(SHARE_FRIEND, "分享好友一起学习", 1, offerId, null));
                     } else {
-                        btns.add(createBtn(CANNOT_BUY,"不能直接" + str, 0, offerId, null));
+                        // 需要付费购买
+                        canPlay = false;
+                        btns.add(createBtn(BUY_NOW, "立即" + str, 1, offerId, price + ""));
+                        if (lv.equals("VIP")) {
+                            Object svipPrice = buyPrivi.get("SVIP");
+                            if(svipPrice!=null && new BigDecimal(svipPrice.toString()).compareTo(BigDecimal.ZERO)==0) {
+                                OfferDto offerDto = queryVipInfo("SVIP");
+                                String svipBuyPrivi = offerDto.getBuyPrivi();
+                                JSONObject svipBuyJson = JSONObject.parseObject(svipBuyPrivi);
+                                btns.add(createBtn(BE_SVIP, "升级SVIP", 1,
+                                        "OFFER002", svipBuyJson.get(lv).toString()));
+                            }
+                        }
                     }
-                } else if(new BigDecimal(price.toString()).compareTo(BigDecimal.ZERO)<=0){
-                    // 免费
-                    canPlay = true;
-                    btns.add(createBtn(SHARE_FRIEND, "分享好友一起学习", 1, offerId, null));
                 } else {
-                    // 校验是否购买过此套餐
-                    if(hasBuy(custId, offerId)){
-                        // 已购买
+                    // 非会员
+                    Object price = buyPrivi.get(lv);
+                    if (price == null) {
+                        canPlay = false;
+                        int cannotBuy = 0;
+                        if (buyPrivi.containsKey("VIP")) {
+                            OfferDto offerDto = queryVipInfo("VIP");
+                            String vipBuyPrivi = offerDto.getBuyPrivi();
+                            JSONObject vipBuyJson = JSONObject.parseObject(vipBuyPrivi);
+                            btns.add(createBtn(BE_VIP, "升级VIP", 1,
+                                    "OFFER001-OFFER002", vipBuyJson.get(lv).toString()));
+                            cannotBuy++;
+                        }
+                        if (buyPrivi.containsKey("SVIP")) {
+                            OfferDto offerDto = queryVipInfo("SVIP");
+                            String vipBuyPrivi = offerDto.getBuyPrivi();
+                            JSONObject vipBuyJson = JSONObject.parseObject(vipBuyPrivi);
+                            btns.add(createBtn(BE_SVIP, "升级SVIP", 1,
+                                    "OFFER002", vipBuyJson.get(lv).toString()));
+                            cannotBuy++;
+                        }
+                        if (cannotBuy == 0) {
+                            btns.add(createBtn(CANNOT_BUY, "不能直接" + str, 0, offerId, null));
+                        }
+                    } else if (new BigDecimal(price.toString()).compareTo(BigDecimal.ZERO) <= 0) {
+                        // 免费
                         canPlay = true;
                         btns.add(createBtn(SHARE_FRIEND, "分享好友一起学习", 1, offerId, null));
                     } else {
                         // 需要购买
                         canPlay = false;
                         btns.add(createBtn(BUY_NOW, "立即" + str, 1, offerId, price + ""));
-                        if(lv.equals("VIP")){
-                            btns.add(createBtn(BE_SVIP,"升级SVIP", 1, "OFFER002", "400"));
-                        }
-                    }
-                }
-            } else {
-                // 非会员
-                Object price = buyPrivi.get(lv);
-                if(price==null){
-                    canPlay = false;
-                    int cannotBuy = 0;
-                    if(buyPrivi.containsKey("VIP")) {
-                        btns.add(createBtn(BE_VIP, "升级VIP", 1, "OFFER001", "299"));
-                        cannotBuy++;
-                    }
-                    if(buyPrivi.containsKey("SVIP")) {
-                        btns.add(createBtn(BE_SVIP, "升级SVIP", 1, "OFFER002", "699"));
-                        cannotBuy++;
-                    }
-                    if(cannotBuy==0){
-                        btns.add(createBtn(CANNOT_BUY,"不能直接" + str, 0, offerId, null));
-                    }
-                } else if(new BigDecimal(price.toString()).compareTo(BigDecimal.ZERO)<=0){
-                    // 免费
-                    canPlay = true;
-                    btns.add(createBtn(SHARE_FRIEND, "分享好友一起学习", 1, offerId, null));
-                } else {
-                    // 校验是否购买过此套餐
-                    if(hasBuy(custId, offerId)){
-                        // 已购买
-                        canPlay = true;
-                        btns.add(createBtn(SHARE_FRIEND, "分享好友一起学习", 1, offerId, null));
-                    } else {
-                        // 需要购买
-                        canPlay = false;
-                        btns.add(createBtn(BUY_NOW,"立即" + str,1,  offerId, price + ""));
-                        btns.add(createBtn(BE_VIP,"升级VIP", 1, "OFFER001", "299"));
+                        OfferDto offerDto = queryVipInfo("VIP");
+                        String vipBuyPrivi = offerDto.getBuyPrivi();
+                        JSONObject vipBuyJson = JSONObject.parseObject(vipBuyPrivi);
+                        btns.add(createBtn(BE_VIP, "升级VIP", 1,
+                                "OFFER001-OFFER002", vipBuyJson.get(lv).toString()));
                     }
                 }
             }
@@ -340,15 +385,29 @@ public class DetailController {
         return canPlay;
     }
 
-    private boolean hasBuy(String custId, String offerId){
+    private boolean hasBuy(String custId, String offerId, String type){
+        List<String> offerIds = new ArrayList<>();
+        offerIds.add(offerId);
         // 校验是否购买过此套餐
-        PurchasedInfoDto purchasedVideoDto = new PurchasedInfoDto();
-        purchasedVideoDto.setCustId(custId);
-        purchasedVideoDto.setOfferId(offerId);
-        BaseResult<Integer> hasBuy = purchasedInfoService.count(purchasedVideoDto);
-        if(hasBuy.getCode()==BaseConstant.FAILED){
-            throw new RuntimeException(hasBuy.getMsg());
+        if(type.equals("CLASS") || type.equals("ACTIVE")){
+            // 查询所属套餐
+            BaseResult<List<String>> relOfferListBaseResult = offerService.queryOfferByChildOffer(offerId);
+            if(relOfferListBaseResult.getCode()==BaseConstant.SUCCESS && CollectionUtils.isNotEmpty(relOfferListBaseResult.getData())){
+                offerIds.addAll(relOfferListBaseResult.getData());
+            }
         }
-        return hasBuy.getData()>0;
+        for(String _offerId : offerIds) {
+            PurchasedInfoDto purchasedVideoDto = new PurchasedInfoDto();
+            purchasedVideoDto.setCustId(custId);
+            purchasedVideoDto.setOfferId(_offerId);
+            BaseResult<Integer> hasBuy = purchasedInfoService.count(purchasedVideoDto);
+            if (hasBuy.getCode() == BaseConstant.FAILED) {
+                throw new RuntimeException(hasBuy.getMsg());
+            }
+            if(hasBuy.getData() > 0) {
+                return true;
+            }
+        }
+        return false;
     }
 }

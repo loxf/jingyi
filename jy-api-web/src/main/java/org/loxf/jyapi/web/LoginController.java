@@ -121,8 +121,14 @@ public class LoginController {
     @RequestMapping("/api/getUserInfo")
     @ResponseBody
     public BaseResult<CustDto> getUserInfo(HttpServletRequest request, HttpServletResponse response) {
-        return new BaseResult<>(CookieUtil.getCust(request));
+        CustDto custDto = CookieUtil.getCust(request);
+        String flag = jedisUtil.get("REFRESH_CUST_INFO_") + custDto.getCustId();
+        if(StringUtils.isNotBlank(flag) && Boolean.valueOf(flag)){
+            custDto = custService.queryCustByOpenId(custDto.getOpenid()).getData();
+        }
+        return new BaseResult<>(custDto);
     }
+
 /*
     private void notice(CustDto custDto, String ip){
         Map result = new HashMap();
