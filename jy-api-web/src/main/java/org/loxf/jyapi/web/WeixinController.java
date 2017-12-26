@@ -116,7 +116,8 @@ public class WeixinController {
                                 if (accountResult.getCode() == BaseConstant.SUCCESS) {
                                     // 完成订单
                                     BaseResult completeOrderResult = orderService.completeOrder(out_trade_no, transaction_id, 3, "");
-                                    if(completeOrderResult.getCode()==BaseConstant.SUCCESS && orderDto.getOrderType()==3){
+                                    if(completeOrderResult.getCode()==BaseConstant.SUCCESS && (orderDto.getOrderType()==3
+                                            || orderDto.getOrderType()==1)){
                                         // 如果购买的是VIP，设置用户信息刷新标志
                                         jedisUtil.set("REFRESH_CUST_INFO_" + orderDto.getCustId(), "true", 60);
                                     }

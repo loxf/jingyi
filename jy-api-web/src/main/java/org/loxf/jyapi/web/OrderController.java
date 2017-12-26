@@ -3,6 +3,7 @@ package org.loxf.jyapi.web;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.sun.org.apache.regexp.internal.RE;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.loxf.jyadmin.base.bean.BaseResult;
 import org.loxf.jyadmin.base.constant.BaseConstant;
@@ -67,6 +68,20 @@ public class OrderController {
         // 订单属性
         if (type.equals("ACTIVE")) {// 活动才有订单属性
             setAttrList(result);
+        } else if (type.equals("OFFER")){// 套餐含活动也会有这个属性
+            BaseResult<List<OfferDto>> listBaseResult = offerService.showOfferRel(offerId, "OFFER");
+            if(listBaseResult.getCode()==BaseConstant.SUCCESS && CollectionUtils.isNotEmpty(listBaseResult.getData())){
+                boolean hasActive = false;
+                for(OfferDto relOffer : listBaseResult.getData()){
+                    if(relOffer.getOfferType().equals("ACTIVE")){
+                        hasActive = true;
+                        break;
+                    }
+                }
+                if(hasActive){
+                    setAttrList(result);
+                }
+            }
         }
         //商品列表
         return setOfferList(custDto.getUserLevel(), offerId, type, result);
@@ -282,7 +297,8 @@ public class OrderController {
                 if (payBaseResult.getCode() == BaseConstant.SUCCESS && payBaseResult.getData()){
                     // 支付成功
                     BaseResult baseResult1 = orderService.completeOrder(orderId, null, 3, "支付成功");
-                    if(baseResult.getCode()==BaseConstant.SUCCESS && orderDto.getOrderType()==3){
+                    if(baseResult.getCode()==BaseConstant.SUCCESS &&
+                            (orderDto.getOrderType()==3 || orderDto.getOrderType()==1)){
                         // 如果购买的是VIP，设置用户信息刷新标志
                         jedisUtil.set("REFRESH_CUST_INFO_" + orderDto.getCustId(), "true", 60);
                     }
