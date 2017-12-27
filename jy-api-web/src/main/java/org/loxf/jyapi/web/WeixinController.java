@@ -24,10 +24,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 @Controller
 public class WeixinController {
@@ -96,13 +93,13 @@ public class WeixinController {
                     if(msgMap.containsKey("Event") && msgMap.get("Event").equals(WeChatMessageConstant.MESSAGE_EVENT_SUBSCRIBE)) {
                         Map map = createMsgResp((String)msgMap.get("FromUserName"), System.currentTimeMillis(),
                                 WeChatMessageConstant.MESSAGE_EVENT_SUBSCRIBE, msgPic);
-                        responseXml(WXPayUtil.mapToXml(map), response);
+                        responseXml(map2Xmlstring(map), response);
                         return;
                     }
                 } else {
                     Map map = createMsgResp((String)msgMap.get("FromUserName"), System.currentTimeMillis(), WeChatMessageConstant.MESSAGE_TEXT,
                             "亲爱的会员，我们还在努力的构建智能客服系统，如果你有疑问，现在可以直接咨询班主任。");
-                    responseXml(WXPayUtil.mapToXml(map), response);
+                    responseXml(map2Xmlstring(map), response);
                     return;
                 }
             }
@@ -260,5 +257,25 @@ public class WeixinController {
             logger.error("微信返回内容转MAP异常", e);
             return new BaseResult<>(BaseConstant.FAILED, "微信返回内容转MAP异常");
         }
+    }
+    /**
+     * Map转换成Xml
+     * @param map
+     * @return
+     */
+    public static String map2Xmlstring(Map<String,Object> map){
+        StringBuffer sb = new StringBuffer("");
+        sb.append("<xml>");
+
+        Set<String> set = map.keySet();
+        for(Iterator<String> it=set.iterator(); it.hasNext();){
+            String key = it.next();
+            Object value = map.get(key);
+            sb.append("<").append(key).append(">");
+            sb.append(value);
+            sb.append("</").append(key).append(">");
+        }
+        sb.append("</xml>");
+        return sb.toString();
     }
 }
