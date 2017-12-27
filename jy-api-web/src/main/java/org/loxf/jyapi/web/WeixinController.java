@@ -93,13 +93,13 @@ public class WeixinController {
                     if(msgMap.containsKey("Event") && msgMap.get("Event").equals(WeChatMessageConstant.MESSAGE_EVENT_SUBSCRIBE)) {
                         Map map = createMsgResp((String)msgMap.get("FromUserName"), System.currentTimeMillis(),
                                 WeChatMessageConstant.MESSAGE_IMAGE, msgPic);
-                        responseXml(map2Xmlstring(map), response);
+                        responseXml(map2Xmlstring(map, "Image"), response);
                         return;
                     }
                 } else {
                     Map map = createMsgResp((String)msgMap.get("FromUserName"), System.currentTimeMillis(), WeChatMessageConstant.MESSAGE_TEXT,
                             "亲爱的会员，我们还在努力的构建智能客服系统，如果你有疑问，现在可以直接咨询班主任。");
-                    responseXml(map2Xmlstring(map), response);
+                    responseXml(map2Xmlstring(map, null), response);
                     return;
                 }
             }
@@ -211,14 +211,6 @@ public class WeixinController {
                 + "<return_msg><![CDATA[" + msg + "]]></return_msg>" + "</xml> ";
     }
 
-    private String createVideoMsgResp(String FromUserName, long CreateTime, String MediaId,
-                                 String Title, String Description) throws Exception {
-        Map map = createMsgResp(FromUserName, CreateTime, WeChatMessageConstant.MESSAGE_VIDEO, MediaId);
-        map.put("Title", Title);
-        map.put("Description", Description);
-        return WXPayUtil.mapToXml(map);
-    }
-
     private Map createMsgResp(String toUserName, long CreateTime, String MsgType, String ContentOrMediaId) {
         String wxId = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_COM, "WX_ID").getConfigValue();
         Map map = new HashMap();
@@ -228,8 +220,7 @@ public class WeixinController {
         map.put("MsgType", MsgType);
         if (MsgType.equals(WeChatMessageConstant.MESSAGE_TEXT)) {
             map.put("Content", ContentOrMediaId);
-        } else if (MsgType.equals(WeChatMessageConstant.MESSAGE_IMAGE) || MsgType.equals(WeChatMessageConstant.MESSAGE_VOICE)
-                || MsgType.equals(WeChatMessageConstant.MESSAGE_VIDEO)) {
+        } else if (MsgType.equals(WeChatMessageConstant.MESSAGE_IMAGE) || MsgType.equals(WeChatMessageConstant.MESSAGE_VOICE)) {
             map.put("MediaId", ContentOrMediaId);
         } else {
             map.put("Content", ContentOrMediaId);
@@ -263,7 +254,7 @@ public class WeixinController {
      * @param map
      * @return
      */
-    public static String map2Xmlstring(Map<String,Object> map){
+    public static String map2Xmlstring(Map<String,Object> map, String type){
         StringBuffer sb = new StringBuffer("");
         sb.append("<xml>");
 
@@ -271,9 +262,15 @@ public class WeixinController {
         for(Iterator<String> it=set.iterator(); it.hasNext();){
             String key = it.next();
             Object value = map.get(key);
+            if(type!=null && key.equals("MediaId")){
+                sb.append("<").append(type).append(">");
+            }
             sb.append("<").append(key).append(">");
             sb.append("<![CDATA[").append(value).append("]]>");
             sb.append("</").append(key).append(">");
+            if(type!=null && key.equals("MediaId")){
+                sb.append("</").append(type).append(">");
+            }
         }
         sb.append("</xml>");
         return sb.toString();
