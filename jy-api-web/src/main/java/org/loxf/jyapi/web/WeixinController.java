@@ -272,7 +272,7 @@ public class WeixinController {
             String key = it.next();
             Object value = map.get(key);
             sb.append("<").append(key).append(">");
-            sb.append(value);
+            sb.append("<![CDATA[").append(value).append("]]>");
             sb.append("</").append(key).append(">");
         }
         sb.append("</xml>");
