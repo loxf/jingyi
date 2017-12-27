@@ -191,7 +191,7 @@ public class OrderController {
         OrderDto orderDto = new OrderDto();
         String privi = "";
         String metaDataStr = "";
-        int maxBpUser = 0;
+        int maxBpUse = 0;
         BaseResult<Boolean> hasBuyOrder = orderService.hasBuy(custDto.getCustId(), paramOrder.getOrderType(), paramOrder.getObjId());
         if (hasBuyOrder.getCode() == BaseConstant.FAILED) {
             return new BaseResult(BaseConstant.FAILED, hasBuyOrder.getMsg());
@@ -210,14 +210,7 @@ public class OrderController {
                 return new BaseResult(BaseConstant.FAILED, "服务不存在");
             }
             // 服务价格单独处理
-            if (lv.equals("VIP") && offerDto.getOfferName().equals("SVIP")) {
-                // vip 升级 svip
-                orderDto.setOrderMoney(new BigDecimal("400"));
-                orderDto.setTotalMoney(new BigDecimal("400"));
-            } else {
-                orderDto.setOrderMoney(offerDto.getSaleMoney());
-                orderDto.setTotalMoney(offerDto.getSaleMoney());
-            }
+
             orderDto.setOrderName("升级" + offerDto.getOfferName());
         } else if (paramOrder.getOrderType() == 5) {
             ActiveDto activeDto = activeService.queryActive(paramOrder.getObjId()).getData();
@@ -228,34 +221,34 @@ public class OrderController {
             privi = activeDto.getActivePrivi();
             metaDataStr = activeDto.getMetaData();
         }
-        if (paramOrder.getOrderType() != 3) {
-            if (StringUtils.isBlank(privi)) {
-                return new BaseResult(BaseConstant.FAILED, "当前商品不能购买");
+        if (StringUtils.isBlank(privi)) {
+            return new BaseResult(BaseConstant.FAILED, "当前商品不能购买");
+        } else {
+            JSONObject priviJson = JSONObject.parseObject(privi);
+            if (!priviJson.containsKey(lv)) {
+                return new BaseResult(BaseConstant.FAILED, "无权购买当前商品");
             } else {
-                JSONObject priviJson = JSONObject.parseObject(privi);
-                if (!priviJson.containsKey(lv)) {
-                    return new BaseResult(BaseConstant.FAILED, "无权购买当前商品");
-                } else {
-                    String price = priviJson.getString(lv);
-                    orderDto.setOrderMoney(new BigDecimal(price));
-                    orderDto.setTotalMoney(new BigDecimal(price));
-                }
-            }
-            if (StringUtils.isNotBlank(metaDataStr)) {
-                JSONObject metaDataJson = JSONObject.parseObject(metaDataStr);
-                maxBpUser = metaDataJson.getIntValue("MAXBP");
+                String price = priviJson.getString(lv);
+                orderDto.setOrderMoney(new BigDecimal(price));
+                orderDto.setTotalMoney(new BigDecimal(price));
             }
         }
+        if (StringUtils.isNotBlank(metaDataStr)) {
+            JSONObject metaDataJson = JSONObject.parseObject(metaDataStr);
+            maxBpUse = metaDataJson.getIntValue("MAXBP");
+        }
         if (paramOrder.getBp() != null) {
-            if (paramOrder.getBp().compareTo(new BigDecimal(maxBpUser)) > 0) {
-                return new BaseResult(BaseConstant.FAILED, "当前商品最多使用" + maxBpUser + "积分");
+            if (paramOrder.getBp().compareTo(new BigDecimal(maxBpUse)) > 0) {
+                return new BaseResult(BaseConstant.FAILED, "当前商品最多使用" + maxBpUse + "积分");
             } else {
                 // 减去抵扣的积分
                 orderDto.setOrderMoney(orderDto.getOrderMoney().subtract((paramOrder.getBp().divide(BigDecimal.TEN))));
             }
         }
-        if (orderDto.getOrderMoney().compareTo(BigDecimal.ZERO) <= 0) {
+        if (orderDto.getOrderMoney().compareTo(BigDecimal.ZERO) < 0) {
             return new BaseResult(BaseConstant.FAILED, "实际付款金额不能小于0");
+        } else if (orderDto.getOrderMoney().compareTo(BigDecimal.ZERO) == 0 && paramOrder.getPayType()==1){
+            return new BaseResult(BaseConstant.FAILED, "支付0元，请使用余额支付。绑定支付密码可开通余额支付。");
         }
         orderDto.setObjId(paramOrder.getObjId());
         orderDto.setOrderType(paramOrder.getOrderType());
