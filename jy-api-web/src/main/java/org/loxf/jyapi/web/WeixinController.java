@@ -225,7 +225,7 @@ public class WeixinController {
         Map map = new HashMap();
         map.put("ToUserName", appId);
         map.put("FromUserName", FromUserName);
-        map.put("CreateTime", CreateTime);
+        map.put("CreateTime", CreateTime + "");
         map.put("MsgType", MsgType);
         if (MsgType.equals(WeChatMessageConstant.MESSAGE_TEXT)) {
             map.put("Content", ContentOrMediaId);
