@@ -92,7 +92,7 @@ public class WeixinController {
                             "aguvLUu8kOua8acj1qnOjaHQjG9GhBb7ogQSlGUjreQ").getConfigValue();
                     if(msgMap.containsKey("Event") && msgMap.get("Event").equals(WeChatMessageConstant.MESSAGE_EVENT_SUBSCRIBE)) {
                         Map map = createMsgResp((String)msgMap.get("FromUserName"), System.currentTimeMillis(),
-                                WeChatMessageConstant.MESSAGE_EVENT_SUBSCRIBE, msgPic);
+                                WeChatMessageConstant.MESSAGE_IMAGE, msgPic);
                         responseXml(map2Xmlstring(map), response);
                         return;
                     }
@@ -219,11 +219,11 @@ public class WeixinController {
         return WXPayUtil.mapToXml(map);
     }
 
-    private Map createMsgResp(String FromUserName, long CreateTime, String MsgType, String ContentOrMediaId) {
+    private Map createMsgResp(String toUserName, long CreateTime, String MsgType, String ContentOrMediaId) {
         String wxId = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_COM, "WX_ID").getConfigValue();
         Map map = new HashMap();
-        map.put("ToUserName", wxId);
-        map.put("FromUserName", FromUserName);
+        map.put("ToUserName", toUserName);
+        map.put("FromUserName", wxId);
         map.put("CreateTime", (CreateTime/1000) + "");
         map.put("MsgType", MsgType);
         if (MsgType.equals(WeChatMessageConstant.MESSAGE_TEXT)) {
