@@ -221,9 +221,9 @@ public class WeixinController {
     }
 
     private Map createMsgResp(String FromUserName, long CreateTime, String MsgType, String ContentOrMediaId) {
-        String appId = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "WX_APPID").getConfigValue();
+        String wxId = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_COM, "WX_ID").getConfigValue();
         Map map = new HashMap();
-        map.put("ToUserName", appId);
+        map.put("ToUserName", wxId);
         map.put("FromUserName", FromUserName);
         map.put("CreateTime", CreateTime + "");
         map.put("MsgType", MsgType);
