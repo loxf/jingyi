@@ -5,6 +5,7 @@ import com.github.wxpay.sdk.WXPayUtil;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.loxf.jyadmin.base.bean.BaseResult;
 import org.loxf.jyadmin.base.constant.BaseConstant;
+import org.loxf.jyadmin.base.constant.WeChatMessageConstant;
 import org.loxf.jyadmin.base.util.JedisUtil;
 import org.loxf.jyadmin.client.dto.OrderDto;
 import org.loxf.jyadmin.client.service.AccountService;
@@ -16,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
@@ -24,6 +26,7 @@ import java.io.*;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 @Controller
@@ -46,7 +49,7 @@ public class WeixinController {
      * @param echostr
      * @return
      */
-    @RequestMapping("/api/weixin/api_access")
+    @RequestMapping(value = "/api/weixin/api_access", method= RequestMethod.GET)
     @ResponseBody
     public String apiAccess(String signature, String timestamp, String nonce, String echostr) {
         // 1）将token、timestamp、nonce三个参数进行字典序排序
@@ -63,6 +66,50 @@ public class WeixinController {
             return echostr;
         }
         return "";
+    }
+
+    /**
+     * 接入微信接口
+     *
+     * @return
+     */
+    @RequestMapping(value = "/api/weixin/api_access", method= RequestMethod.POST)
+    public void wxAccess(HttpServletRequest request, HttpServletResponse response) {
+        //读取参数
+        StringBuffer notifyData = new StringBuffer();
+        try {
+            InputStream inputStream = request.getInputStream();
+            String s;
+            BufferedReader in = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
+            while ((s = in.readLine()) != null) {
+                notifyData.append(s);
+            }
+            in.close();
+            inputStream.close();
+            logger.debug("接收到的微信POST消息：" + notifyData.toString());
+            Map msgMap = WXPayUtil.xmlToMap(notifyData.toString());
+            if(msgMap.containsKey("MsgType")) {
+                if(msgMap.get("MsgType").equals(WeChatMessageConstant.MESSAGE_EVENT)) {
+                    // 事件推送
+                    if(msgMap.containsKey("Event") && msgMap.get("Event").equals(WeChatMessageConstant.MESSAGE_EVENT_SUBSCRIBE)) {
+                        Map map = createMsgResp((String)msgMap.get("FromUserName"), System.currentTimeMillis(),
+                                WeChatMessageConstant.MESSAGE_EVENT_SUBSCRIBE, "");
+                        responseXml(WXPayUtil.mapToXml(map), response);
+                        return;
+                    }
+                } else {
+                    Map map = createMsgResp((String)msgMap.get("FromUserName"), System.currentTimeMillis(), WeChatMessageConstant.MESSAGE_TEXT,
+                            "亲爱的会员，我们还在努力的构建智能客服系统，如果你有疑问，现在可以直接咨询班主任。");
+                    responseXml(WXPayUtil.mapToXml(map), response);
+                    return;
+                }
+            }
+        } catch (IOException e) {
+            logger.error("微信POST消息异常", e);
+        } catch (Exception e) {
+            logger.error("微信POST消息异常", e);
+        }
+        responseXml("", response);
     }
 
     @RequestMapping("/api/weixin/payorder")
@@ -163,6 +210,32 @@ public class WeixinController {
     private String createResp(String code, String msg) {
         return "<xml>" + "<return_code><![CDATA[" + code + "]]></return_code>"
                 + "<return_msg><![CDATA[" + msg + "]]></return_msg>" + "</xml> ";
+    }
+
+    private String createVideoMsgResp(String FromUserName, long CreateTime, String MediaId,
+                                 String Title, String Description) throws Exception {
+        Map map = createMsgResp(FromUserName, CreateTime, WeChatMessageConstant.MESSAGE_VIDEO, MediaId);
+        map.put("Title", Title);
+        map.put("Description", Description);
+        return WXPayUtil.mapToXml(map);
+    }
+
+    private Map createMsgResp(String FromUserName, long CreateTime, String MsgType, String ContentOrMediaId) {
+        String appId = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "WX_APPID").getConfigValue();
+        Map map = new HashMap();
+        map.put("ToUserName", appId);
+        map.put("FromUserName", FromUserName);
+        map.put("CreateTime", CreateTime);
+        map.put("MsgType", MsgType);
+        if (MsgType.equals(WeChatMessageConstant.MESSAGE_TEXT)) {
+            map.put("Content", ContentOrMediaId);
+        } else if (MsgType.equals(WeChatMessageConstant.MESSAGE_IMAGE) || MsgType.equals(WeChatMessageConstant.MESSAGE_VOICE)
+                || MsgType.equals(WeChatMessageConstant.MESSAGE_VIDEO)) {
+            map.put("MediaId", ContentOrMediaId);
+        } else {
+            map.put("Content", ContentOrMediaId);
+        }
+        return map;
     }
 
     public static BaseResult<Map<String, String>> payNotifySign(String notifyData) {
