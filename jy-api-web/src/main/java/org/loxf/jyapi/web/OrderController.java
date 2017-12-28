@@ -261,7 +261,7 @@ public class OrderController {
     }
 
     /**
-     * 创建订单
+     * 支付订单
      *
      * @param orderId
      * @param password
