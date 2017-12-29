@@ -112,11 +112,11 @@ public class CustController {
                 // 0：无，1：免费 2：VIP免费 3：SVIP免费
                 String activePrivi = dto.getActivePrivi();
                 JSONObject priviJson = JSON.parseObject(activePrivi);
-                if(priviJson.containsKey("NONE") && priviJson.getIntValue("NONE")==0) {
+                if(priviJson.containsKey("NONE") && new BigDecimal(priviJson.get("NONE").toString()).compareTo(BigDecimal.ZERO)==0) {
                     jsonObject.put("vipFlag", 1);
-                } else if(priviJson.containsKey("VIP") && priviJson.getIntValue("VIP")==0) {
+                } else if(priviJson.containsKey("VIP") && new BigDecimal(priviJson.get("VIP").toString()).compareTo(BigDecimal.ZERO)==0) {
                     jsonObject.put("vipFlag", 2);
-                } else if(priviJson.containsKey("SVIP") && priviJson.getIntValue("SVIP")==0) {
+                } else if(priviJson.containsKey("SVIP") && new BigDecimal(priviJson.get("SVIP").toString()).compareTo(BigDecimal.ZERO)==0) {
                     jsonObject.put("vipFlag", 3);
                 } else {
                     jsonObject.put("vipFlag", 0);
@@ -206,6 +206,13 @@ public class CustController {
             }
             BaseResult verifyResult = verifyCodeService.verify(custDto.getCustId(), verifyCode);
             if(verifyResult.getCode()==BaseConstant.SUCCESS) {
+                // 判断用户存在不
+                BaseResult<CustDto> existsCustBaseResult = custService.queryCust(isChinese, StringUtils.isNotBlank(phone)?phone:email);
+                if(existsCustBaseResult.getCode()==BaseConstant.SUCCESS && existsCustBaseResult.getData()!=null){
+                    if(StringUtils.isNotBlank(existsCustBaseResult.getData().getOpenid())) {// 老用户没有openid 但是有电话
+                        return new BaseResult(BaseConstant.FAILED, "当前联系方式已被绑定，请更换");
+                    }
+                }
                 custDto.setIsChinese(isChinese);
                 custDto.setEmail(email);
                 custDto.setPhone(phone);

@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -183,11 +184,11 @@ public class IndexController {
                 String buyPrivi = tmp.getBuyPrivi();
                 if(StringUtils.isNotBlank(buyPrivi)){
                     JSONObject buyPriviJson = JSON.parseObject(buyPrivi);
-                    if(buyPriviJson.containsKey("NONE")&&buyPriviJson.getDouble("NONE")==0d){
+                    if(buyPriviJson.containsKey("NONE")&& new BigDecimal(buyPriviJson.get("NONE").toString()).compareTo(BigDecimal.ZERO)==0){
                         jsonObject.put("freeType", "NONE");
-                    } else if(buyPriviJson.containsKey("VIP")&&buyPriviJson.getDouble("VIP")==0d){
+                    } else if(buyPriviJson.containsKey("VIP")&& new BigDecimal(buyPriviJson.get("NONE").toString()).compareTo(BigDecimal.ZERO)==0){
                         jsonObject.put("freeType", "VIP");
-                    } else if(buyPriviJson.containsKey("SVIP")&&buyPriviJson.getDouble("SVIP")==0d){
+                    } else if(buyPriviJson.containsKey("SVIP") && new BigDecimal(buyPriviJson.get("NONE").toString()).compareTo(BigDecimal.ZERO)==0){
                         jsonObject.put("freeType", "SVIP");
                     } else {
                         jsonObject.put("freeType", "");
@@ -235,11 +236,11 @@ public class IndexController {
                 // 0：无，1：免费 2：VIP免费 3：SVIP免费
                 String activePrivi = dto.getActivePrivi();
                 JSONObject priviJson = JSON.parseObject(activePrivi);
-                if(priviJson.containsKey("NONE") && priviJson.getIntValue("NONE")==0) {
+                if(priviJson.containsKey("NONE") && new BigDecimal(priviJson.get("NONE").toString()).compareTo(BigDecimal.ZERO)==0) {
                     jsonObject.put("vipFlag", 1);
-                } else if(priviJson.containsKey("VIP") && priviJson.getIntValue("VIP")==0) {
+                } else if(priviJson.containsKey("VIP") && new BigDecimal(priviJson.get("VIP").toString()).compareTo(BigDecimal.ZERO)==0) {
                     jsonObject.put("vipFlag", 2);
-                } else if(priviJson.containsKey("SVIP") && priviJson.getIntValue("SVIP")==0) {
+                } else if(priviJson.containsKey("SVIP") && new BigDecimal(priviJson.get("SVIP").toString()).compareTo(BigDecimal.ZERO)==0) {
                     jsonObject.put("vipFlag", 3);
                 } else {
                     jsonObject.put("vipFlag", 0);
