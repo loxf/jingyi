@@ -308,7 +308,7 @@ public class DetailController {
                         if (lv.equals("VIP")) {
                             // 查看SVIP是否可以购买
                             Object svipPrice = buyPrivi.get("SVIP");
-                            if (svipPrice != null) {
+                            if (svipPrice != null && new BigDecimal(svipPrice.toString()).compareTo(BigDecimal.ZERO)==0) {
                                 // 查询SVIP信息
                                 OfferDto offerDto = queryVipInfo("SVIP");
                                 String svipBuyPrivi = offerDto.getBuyPrivi();
@@ -324,6 +324,10 @@ public class DetailController {
                     } else if (new BigDecimal(price.toString()).compareTo(BigDecimal.ZERO) <= 0) {
                         // 免费
                         canPlay = true;
+                        if(type.equals("ACTIVE")){
+                            // 活动0元也可以报名
+                            btns.add(createBtn(BUY_NOW, "立即" + str, 1, offerId,  "0"));
+                        }
                         btns.add(createBtn(SHARE_FRIEND, "分享好友一起学习", 1, offerId, null));
                     } else {
                         // 需要付费购买
@@ -368,16 +372,28 @@ public class DetailController {
                     } else if (new BigDecimal(price.toString()).compareTo(BigDecimal.ZERO) <= 0) {
                         // 免费
                         canPlay = true;
+                        if(type.equals("ACTIVE")){
+                            // 活动0元也可以报名
+                            btns.add(createBtn(BUY_NOW, "立即" + str, 1, offerId,  "0"));
+                        }
                         btns.add(createBtn(SHARE_FRIEND, "分享好友一起学习", 1, offerId, null));
                     } else {
                         // 需要购买
                         canPlay = false;
                         btns.add(createBtn(BUY_NOW, "立即" + str, 1, offerId, price + ""));
-                        OfferDto offerDto = queryVipInfo("VIP");
-                        String vipBuyPrivi = offerDto.getBuyPrivi();
-                        JSONObject vipBuyJson = JSONObject.parseObject(vipBuyPrivi);
-                        btns.add(createBtn(BE_VIP, "升级VIP", 1,
-                                "OFFER001-OFFER002", vipBuyJson.get(lv).toString()));
+                        if (buyPrivi.containsKey("VIP") && new BigDecimal(buyPrivi.get("VIP").toString()).compareTo(BigDecimal.ZERO)==0) {
+                            OfferDto offerDto = queryVipInfo("VIP");
+                            String vipBuyPrivi = offerDto.getBuyPrivi();
+                            JSONObject vipBuyJson = JSONObject.parseObject(vipBuyPrivi);
+                            btns.add(createBtn(BE_VIP, "升级VIP", 1,
+                                    "OFFER001-OFFER002", vipBuyJson.get(lv).toString()));
+                        } else if (buyPrivi.containsKey("SVIP") && new BigDecimal(buyPrivi.get("SVIP").toString()).compareTo(BigDecimal.ZERO)==0) {
+                            OfferDto offerDto = queryVipInfo("SVIP");
+                            String vipBuyPrivi = offerDto.getBuyPrivi();
+                            JSONObject vipBuyJson = JSONObject.parseObject(vipBuyPrivi);
+                            btns.add(createBtn(BE_SVIP, "升级SVIP", 1,
+                                    "OFFER002", vipBuyJson.get(lv).toString()));
+                        }
                     }
                 }
             }
