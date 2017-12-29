@@ -186,9 +186,9 @@ public class IndexController {
                     JSONObject buyPriviJson = JSON.parseObject(buyPrivi);
                     if(buyPriviJson.containsKey("NONE")&& new BigDecimal(buyPriviJson.get("NONE").toString()).compareTo(BigDecimal.ZERO)==0){
                         jsonObject.put("freeType", "NONE");
-                    } else if(buyPriviJson.containsKey("VIP")&& new BigDecimal(buyPriviJson.get("NONE").toString()).compareTo(BigDecimal.ZERO)==0){
+                    } else if(buyPriviJson.containsKey("VIP")&& new BigDecimal(buyPriviJson.get("VIP").toString()).compareTo(BigDecimal.ZERO)==0){
                         jsonObject.put("freeType", "VIP");
-                    } else if(buyPriviJson.containsKey("SVIP") && new BigDecimal(buyPriviJson.get("NONE").toString()).compareTo(BigDecimal.ZERO)==0){
+                    } else if(buyPriviJson.containsKey("SVIP") && new BigDecimal(buyPriviJson.get("SVIP").toString()).compareTo(BigDecimal.ZERO)==0){
                         jsonObject.put("freeType", "SVIP");
                     } else {
                         jsonObject.put("freeType", "");
