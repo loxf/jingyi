@@ -210,7 +210,7 @@ public class OrderController {
                 return new BaseResult(BaseConstant.FAILED, "服务不存在");
             }
             // 服务价格单独处理
-
+            privi = offerDto.getBuyPrivi();
             orderDto.setOrderName("升级" + offerDto.getOfferName());
         } else if (paramOrder.getOrderType() == 5) {
             ActiveDto activeDto = activeService.queryActive(paramOrder.getObjId()).getData();
