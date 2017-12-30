@@ -29,7 +29,7 @@ public class BaseInterceptor extends HandlerInterceptorAdapter {
     private ConfigService configService;
     @Value("#{configProperties['SYSTEM.DEBUG']}")
     private Boolean debug;
-
+    private static String basePic = null ;
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         try {
@@ -148,9 +148,10 @@ public class BaseInterceptor extends HandlerInterceptorAdapter {
     }
 
     private void setResponse(HttpServletRequest request, HttpServletResponse response){
-        request.setAttribute("basePic",
-                configService.queryConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "PIC_SERVER_URL").getData().getConfigValue());
-
+        if(StringUtils.isBlank(basePic)) {
+            basePic = configService.queryConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "PIC_SERVER_URL").getData().getConfigValue();
+        }
+        request.setAttribute("basePic", basePic);
         response.setHeader("Access-Control-Allow-Origin","*");
         response.setHeader("Access-Control-Allow-Methods","GET, POST, PUT, DELETE, OPTIONS");
         response.setHeader("Access-Control-Allow-Headers","Origin, X-Requested-With, Content-Type, Accept, Cookie");
