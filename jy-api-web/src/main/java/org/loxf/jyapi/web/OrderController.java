@@ -124,7 +124,7 @@ public class OrderController {
         int maxBp = 0;
         if (StringUtils.isNotBlank(metaData)) {
             JSONObject jsonObject = JSONObject.parseObject(metaData);
-            if (jsonObject.containsKey("MAXBP")) {
+            if (jsonObject.containsKey("MAXBP") && StringUtils.isNotBlank((String)jsonObject.get("MAXBP"))) {
                 maxBp = jsonObject.getIntValue("MAXBP");
             }
         }
