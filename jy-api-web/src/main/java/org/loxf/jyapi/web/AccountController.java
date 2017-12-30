@@ -101,10 +101,16 @@ public class AccountController {
         }
         String custId = CookieUtil.getCustId(request);
         if (StringUtils.isBlank(dto.getBankNo()) || StringUtils.isBlank(dto.getBankNo()) || StringUtils.isBlank(dto.getPhone())
-                || StringUtils.isBlank(dto.getUserName())) {
+                || StringUtils.isBlank(dto.getUserName())||StringUtils.isBlank(dto.getCity())) {
             return new BaseResult(BaseConstant.FAILED, "参数不全");
         }
         dto.setCustId(custId);
+        String[] citys = dto.getCity().split("-");
+        if(citys.length>1) {
+            dto.setCity(citys[1]);
+        } else {
+            dto.setCity(citys[0]);
+        }
         return custBankService.addBankCard(dto);
     }
 

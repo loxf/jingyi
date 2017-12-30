@@ -107,7 +107,12 @@ public class IndexController {
         AgentInfoDto dto = new AgentInfoDto();
         BeanUtils.copyProperties(custDto, dto);
         dto.setProvince(province);
-        dto.setCity(city);
+        String[] citys = city.split("-");
+        if(citys.length>1) {
+            dto.setCity(citys[1]);
+        } else {
+            dto.setCity(citys[0]);
+        }
         dto.setRealName(realName);
         dto.setPhone(phone);
         dto.setEmail(email);
