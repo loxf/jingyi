@@ -206,20 +206,15 @@ public class CustController {
             }
             BaseResult verifyResult = verifyCodeService.verify(custDto.getCustId(), verifyCode);
             if(verifyResult.getCode()==BaseConstant.SUCCESS) {
-                // 判断用户存在不
-                BaseResult<CustDto> existsCustBaseResult = custService.queryCust(isChinese, StringUtils.isNotBlank(phone)?phone:email);
-                if(existsCustBaseResult.getCode()==BaseConstant.SUCCESS && existsCustBaseResult.getData()!=null){
-                    if(StringUtils.isNotBlank(existsCustBaseResult.getData().getOpenid())) {// 老用户没有openid 但是有电话
-                        return new BaseResult(BaseConstant.FAILED, "当前联系方式已被绑定，请更换");
-                    }
-                }
                 custDto.setIsChinese(isChinese);
                 custDto.setEmail(email);
                 custDto.setPhone(phone);
                 custDto.setRealName(realName);
+                BaseResult bindBaseResult;
                 if(isChinese==1) {
                     BaseResult<CustDto> custDtoBaseResult = custService.queryOldCust(phone);
                     if(custDtoBaseResult.getCode()==BaseConstant.SUCCESS){
+                        // 老用户 不用判断是否电话存在
                         // 存在老客户未绑定，获取老用户信息
                         CustDto oldCust = custDtoBaseResult.getData();
                         // 将新账号的信息复制到老账号
@@ -233,34 +228,40 @@ public class CustController {
                         oldCust.setPrivilege(custDto.getPrivilege());
                         oldCust.setOpenid(custDto.getOpenid());
                         // 更新老用户信息
-                        custService.updateOldCustInfo(oldCust);
-                        // 获取临时新账户
-                        JSONObject tmpAccount = accountService.queryAccount(custDto.getCustId()).getData();
-                        // 合并新账户金额到老账户
-                        if(new BigDecimal(tmpAccount.get("bp").toString()).compareTo(BigDecimal.ZERO)>0 ||
-                                new BigDecimal(tmpAccount.get("balance").toString()).compareTo(BigDecimal.ZERO)>0) {
-                            accountService.increase(oldCust.getCustId(), new BigDecimal(tmpAccount.get("balance").toString()),
-                                    new BigDecimal(tmpAccount.get("bp").toString()), null, "老用户绑定合并", null);
+                        bindBaseResult = custService.updateOldCustInfo(oldCust);
+                        if(bindBaseResult.getCode()==BaseConstant.SUCCESS) {
+                            // 获取临时新账户
+                            JSONObject tmpAccount = accountService.queryAccount(custDto.getCustId()).getData();
+                            // 合并新账户金额到老账户
+                            if (new BigDecimal(tmpAccount.get("bp").toString()).compareTo(BigDecimal.ZERO) > 0 ||
+                                    new BigDecimal(tmpAccount.get("balance").toString()).compareTo(BigDecimal.ZERO) > 0) {
+                                accountService.increase(oldCust.getCustId(), new BigDecimal(tmpAccount.get("balance").toString()),
+                                        new BigDecimal(tmpAccount.get("bp").toString()), null, "老用户绑定合并", null);
+                            }
+                            // 删除临时客户账户数据
+                            custService.delTmpCust(custDto.getCustId());
+                            accountService.delAccount(custDto.getCustId());
                         }
-                        // 删除临时客户账户数据
-                        custService.delTmpCust(custDto.getCustId());
-                        accountService.delAccount(custDto.getCustId());
                     } else {
-                        custService.updateCust(custDto);
+                        bindBaseResult = custService.bindCust(custDto);
                     }
                 } else {
-                    custService.updateCust(custDto);
+                    bindBaseResult = custService.bindCust(custDto);
                 }
-                sendUserBindNotice(custDto.getOpenid(), custDto.getNickName(), (isChinese==1?phone:email));
-                // 刷新缓存
-                LoginController.setCustInfoSessionAndCookie(request, response, custService, jedisUtil,
-                        custDto.getOpenid(), null);
-                return new BaseResult();
+                if(bindBaseResult.getCode()==BaseConstant.SUCCESS) {
+                    // 绑定成功发通知
+                    sendUserBindNotice(custDto.getOpenid(), custDto.getNickName(), (isChinese == 1 ? phone : email));
+                    // 刷新缓存
+                    LoginController.setCustInfoSessionAndCookie(request, response, custService, jedisUtil,
+                            custDto.getOpenid(), null);
+                }
+                return bindBaseResult;
             } else {
                 return new BaseResult(BaseConstant.FAILED, "验证码错误");
             }
+        } else {
+            return new BaseResult(BaseConstant.FAILED, "用户已绑定，不能重复绑定");
         }
-        return new BaseResult(BaseConstant.FAILED, "用户已绑定，不能重复绑定");
     }
 
     /**
