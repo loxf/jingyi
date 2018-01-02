@@ -18,6 +18,7 @@ import org.loxf.jyapi.util.CookieUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -49,7 +50,8 @@ public class CustController {
     private WatchRecordService watchRecordService;
     @Autowired
     private NoticeService noticeService;
-
+    @Value("#{configProperties['JYZX.INDEX.URL']}")
+    private String JYZX_INDEX_URL;
     /**
      * 初始化接口
      *
@@ -277,7 +279,7 @@ public class CustController {
         data.put("keyword2", BizUtil.createWXKeyWord(DateUtils.formatHms(new Date()), null));
         data.put("remark", BizUtil.createWXKeyWord("若非本人操作，请联系班主任，谢谢。", null));
         noticeService.insert("WX", openid, BizUtil.createWxMsgMap(WxMsgTemplateConstant.BIND_USER,
-                openid, data, BaseConstant.JYZX_INDEX_URL));
+                openid, data, JYZX_INDEX_URL));
     }
     /**
      * 观看记录

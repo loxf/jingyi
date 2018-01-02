@@ -44,6 +44,8 @@ public class LoginController {
     private CustService custService;
     @Value("#{configProperties['SYSTEM.DEBUG']}")
     private Boolean debug;
+    @Value("#{configProperties['JYZX.INDEX.URL']}")
+    private String JYZX_INDEX_URL;
 
     @RequestMapping("/api/login")
     public void login(HttpServletRequest request, HttpServletResponse response, String targetUrl) {
@@ -53,9 +55,9 @@ public class LoginController {
         String loginUrl = WeixinUtil.getLoginUrl(appId, targetUrl, code);
         try {
             if ("JY123456QWE".equals(request.getParameter("XDebug"))) {
-                loginUrl = String.format(BaseConstant.LOGIN_URL, URLEncoder.encode(targetUrl, "utf-8")) + "&state=" + code + "&XDebug=IYUTERESGBXVCMSWB";
+                loginUrl = String.format(JYZX_INDEX_URL + BaseConstant.LOGIN_URL, URLEncoder.encode(targetUrl, "utf-8")) + "&state=" + code + "&XDebug=IYUTERESGBXVCMSWB";
                 if ("L".equals(request.getParameter("LOCATION"))) {
-                    loginUrl = loginUrl.replaceAll("https://www.jingyizaixian.com", "http://127.0.0.1:8081");
+                    loginUrl = loginUrl.replaceAll(JYZX_INDEX_URL, "http://127.0.0.1:8081");
                 }
             }
             jedisUtil.set(code, (System.currentTimeMillis() + 5 * 60 * 1000) + "", 5 * 60);

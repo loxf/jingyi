@@ -86,6 +86,7 @@
         <property name="properties">
             <map>
                 <entry key="SYSTEM.DEBUG" value="${SYSTEM.DEBUG}"></entry>
+                <entry key="JYZX.INDEX.URL" value="${JYZX.INDEX.URL}"></entry>
             </map>
         </property>
     </bean>
