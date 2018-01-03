@@ -62,7 +62,7 @@
 
     <mvc:interceptors>
         <mvc:interceptor>
-            <mvc:mapping path="/"/>
+            <mvc:mapping path="/**"/>
             <mvc:exclude-mapping path="/MP_verify_xYOynIvHmMc0huRJ.txt"/>
             <bean class="org.loxf.jyapi.interceptor.BaseInterceptor" />
         </mvc:interceptor>
