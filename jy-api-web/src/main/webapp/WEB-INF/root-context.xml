@@ -8,6 +8,7 @@
 		http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.0.xsd">
 
     <mvc:annotation-driven/>
+    <mvc:resources mapping="**.txt" location="/static/"/>
 
     <context:component-scan base-package="org.loxf.jyapi.web"/>
 
@@ -60,7 +61,11 @@
     </bean>
 
     <mvc:interceptors>
-        <bean class="org.loxf.jyapi.interceptor.BaseInterceptor" />
+        <mvc:interceptor>
+            <mvc:mapping path="/"/>
+            <mvc:exclude-mapping path="/MP_verify_xYOynIvHmMc0huRJ.txt"/>
+            <bean class="org.loxf.jyapi.interceptor.BaseInterceptor" />
+        </mvc:interceptor>
     </mvc:interceptors>
 
     <bean id="jedisUtil" class="org.loxf.jyadmin.base.util.JedisUtil" >

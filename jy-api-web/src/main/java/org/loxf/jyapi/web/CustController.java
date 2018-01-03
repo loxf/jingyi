@@ -7,13 +7,12 @@ import org.loxf.jyadmin.base.bean.BaseResult;
 import org.loxf.jyadmin.base.bean.PageResult;
 import org.loxf.jyadmin.base.bean.Pager;
 import org.loxf.jyadmin.base.constant.BaseConstant;
-import org.loxf.jyadmin.base.constant.WxMsgTemplateConstant;
 import org.loxf.jyadmin.base.util.DateUtils;
 import org.loxf.jyadmin.base.util.JedisUtil;
-import org.loxf.jyadmin.base.util.SpringApplicationContextUtil;
 import org.loxf.jyadmin.client.dto.*;
 import org.loxf.jyadmin.client.service.*;
 import org.loxf.jyapi.util.BizUtil;
+import org.loxf.jyapi.util.ConfigUtil;
 import org.loxf.jyapi.util.CookieUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -278,7 +277,8 @@ public class CustController {
         data.put("keyword1", BizUtil.createWXKeyWord(nickname, "#FF3030"));
         data.put("keyword2", BizUtil.createWXKeyWord(DateUtils.formatHms(new Date()), null));
         data.put("remark", BizUtil.createWXKeyWord("若非本人操作，请联系班主任，谢谢。", null));
-        noticeService.insert("WX", openid, BizUtil.createWxMsgMap(WxMsgTemplateConstant.BIND_USER,
+        String bindUserMsgId = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "WX_MSG_BIND_USER").getConfigValue();
+        noticeService.insert("WX", openid, BizUtil.createWxMsgMap(bindUserMsgId,
                 openid, data, JYZX_INDEX_URL));
     }
     /**
