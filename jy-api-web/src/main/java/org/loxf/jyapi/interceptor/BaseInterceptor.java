@@ -32,17 +32,17 @@ public class BaseInterceptor extends HandlerInterceptorAdapter {
     private static String basePic = null ;
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        try {
+            setResponse(request, response);
+        } catch (Exception e){
+            logger.error("拦截器设置response失败", e);
+        }
         // 判断用户是否登录系统
         if(needFilter(request.getRequestURI())) {
             if (!hasLogin(request, response)) {
                 this.writeResult(response, new BaseResult(BaseConstant.NOT_LOGIN, "未登录"));
                 return false;
             }
-        }
-        try {
-            setResponse(request, response);
-        } catch (Exception e){
-            logger.error("拦截器设置response失败", e);
         }
         return super.preHandle(request, response, handler);
     }
