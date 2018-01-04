@@ -80,8 +80,8 @@ public class LoginController {
         if (jedisUtil.exists(state)) {
             String expireTime = jedisUtil.get(state);
             if (System.currentTimeMillis() - Long.parseLong(expireTime) > 0) {
-                logger.info("登录校验码失效");
-                throw new BizException("登录校验码失效");
+                logger.info("登录校验码失效:" + state);
+                throw new BizException("登录校验码失效:" + state);
             } else {
                 // 登录成功
                 // 请求用户信息
@@ -110,8 +110,8 @@ public class LoginController {
             }
             jedisUtil.del(state);
         } else {
-            logger.info("登录校验码不存在");
-            throw new BizException("登录校验码不存在");
+            logger.info("登录校验码不存在:" + state);
+            throw new BizException("登录校验码不存在:" + state);
         }
     }
 
