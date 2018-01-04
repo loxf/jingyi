@@ -254,7 +254,7 @@ public class CustController {
                     sendUserBindNotice(custDto.getOpenid(), custDto.getNickName(), (isChinese == 1 ? phone : email));
                     // 刷新缓存
                     LoginController.setCustInfoSessionAndCookie(request, response, custService, jedisUtil,
-                            custDto.getOpenid(), null);
+                            custDto.getOpenid(), 60*60*2);
                 }
                 return bindBaseResult;
             } else {
