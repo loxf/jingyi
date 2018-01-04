@@ -47,7 +47,7 @@ public class LoginController {
     @RequestMapping("/api/login")
     public void login(HttpServletRequest request, HttpServletResponse response, String targetUrl) {
         // 获取登录随机code，五分钟失效
-        String code = getRandomCharAndNumr(8);
+        String code = getRandomCharAndNumr(8) + System.currentTimeMillis();
         String appId = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "WX_APPID").getConfigValue();
         String loginUrl = WeixinUtil.getLoginUrl(appId, targetUrl, code, JYZX_INDEX_URL);
         try {
