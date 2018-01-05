@@ -101,6 +101,9 @@ public class LoginController {
                         Map<String, String> paramMap = UrlUtil.URLRequest(targetUrl);
                         CustDto custDto = settingUser(request, response, paramMap.get("recommend"), userAccessToken, wxUserInfo);
                         try {
+                            // 图片服务器地址
+                            CookieUtil.setCookie(response, "PIC_SERVER_URL",
+                                    ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "PIC_SERVER_URL").getConfigValue());
                             response.sendRedirect(targetUrl);
                         } catch (IOException e) {
                             logger.error("登录后跳转页面失败", e);
@@ -173,8 +176,6 @@ public class LoginController {
             BaseResult<String> custBaseResult = custService.addCust(custDto, userAccessToken);
             custDto.setCustId(custBaseResult.getData());
         }
-        CookieUtil.setCookie(response, "PIC_SERVER_URL",
-                ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "PIC_SERVER_URL").getConfigValue());
 
         return setCustInfoSessionAndCookie(request, response, custService, jedisUtil, wxUserInfo.getOpenid(), expireSecond);
     }
