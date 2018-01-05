@@ -7,13 +7,12 @@ import org.loxf.jyadmin.base.exception.BizException;
 import org.loxf.jyadmin.base.util.JedisUtil;
 import org.loxf.jyadmin.base.util.SpringApplicationContextUtil;
 import org.loxf.jyadmin.client.dto.CustDto;
-import org.loxf.jyadmin.client.service.ConfigService;
 import org.loxf.jyapi.exception.NotLoginException;
+import org.loxf.jyapi.util.ConfigUtil;
 import org.loxf.jyapi.util.CookieUtil;
 import org.loxf.jyadmin.base.bean.BaseResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
@@ -25,8 +24,6 @@ import java.io.PrintWriter;
 public class BaseInterceptor extends HandlerInterceptorAdapter {
     private static Logger logger = LoggerFactory.getLogger(BaseInterceptor.class);
     private static String [] excludeUrl = {"/api/weixin/*", "/api/login", "/api/loginByWx"};
-    @Autowired
-    private ConfigService configService;
     @Value("#{configProperties['SYSTEM.DEBUG']}")
     private Boolean debug;
     private static String basePic = null ;
@@ -149,7 +146,7 @@ public class BaseInterceptor extends HandlerInterceptorAdapter {
 
     private void setResponse(HttpServletRequest request, HttpServletResponse response){
         if(StringUtils.isBlank(basePic)) {
-            basePic = configService.queryConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "PIC_SERVER_URL").getData().getConfigValue();
+            basePic = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "PIC_SERVER_URL").getConfigValue();
         }
         request.setAttribute("basePic", basePic);
         response.setHeader("Access-Control-Allow-Origin","*");
