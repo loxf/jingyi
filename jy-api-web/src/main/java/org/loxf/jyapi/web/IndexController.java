@@ -288,6 +288,7 @@ public class IndexController {
                 json.put("catalogId", tmp.getCatalogId());
                 json.put("catalogName", tmp.getCatalogName());
                 json.put("pic", tmp.getPic());
+                json.put("indexPic", tmp.getIndexPic());
                 list.add(json);
             }
             return new PageResult(pageResult.getTotalPage(), pageResult.getCurrentPage(), pageResult.getTotal() ,list);
