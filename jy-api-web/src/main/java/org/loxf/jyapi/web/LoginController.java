@@ -49,12 +49,13 @@ public class LoginController {
         // 获取登录随机code，五分钟失效
         String code = getRandomCharAndNumr(8) + System.currentTimeMillis();
         String appId = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "WX_APPID").getConfigValue();
-        String loginUrl = WeixinUtil.getLoginUrl(appId, targetUrl, code, JYZX_INDEX_URL);
+        String indexUrl = JYZX_INDEX_URL;
+        String loginUrl = WeixinUtil.getLoginUrl(appId, targetUrl, code, indexUrl);
         try {
             if ("JY123456QWE".equals(request.getParameter("XDebug"))) {
-                loginUrl = String.format(JYZX_INDEX_URL + BaseConstant.LOGIN_URL, URLEncoder.encode(targetUrl, "utf-8")) + "&state=" + code + "&XDebug=IYUTERESGBXVCMSWB";
+                loginUrl = String.format(indexUrl + BaseConstant.LOGIN_URL, URLEncoder.encode(targetUrl, "utf-8")) + "&state=" + code + "&XDebug=IYUTERESGBXVCMSWB";
                 if ("L".equals(request.getParameter("LOCATION"))) {
-                    loginUrl = loginUrl.replaceAll(JYZX_INDEX_URL, "http://127.0.0.1:8081");
+                    loginUrl = loginUrl.replaceAll(indexUrl, "http://127.0.0.1:8081");
                 }
             }
             jedisUtil.set(code, (System.currentTimeMillis() + 5 * 60 * 1000) + "", 5 * 60);
