@@ -76,7 +76,7 @@ public class LoginController {
     @RequestMapping("/api/loginByWx")
     public void login(HttpServletRequest request, HttpServletResponse response, String targetUrl, String code, String state) {
         // 检验用户登录随机码
-        if(StringUtils.isBlank(state)){
+        if (StringUtils.isBlank(state)) {
             logger.info("登录校验码错误");
             throw new BizException("登录校验码错误");
         }
@@ -91,13 +91,13 @@ public class LoginController {
                 String appId = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "WX_APPID").getConfigValue();
                 String appSecret = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "WX_APPSECRET").getConfigValue();
                 UserAccessToken userAccessToken = WeixinUtil.queryUserAccessToken(appId, appSecret, code);
-                if (debug!=null && debug && "IYUTERESGBXVCMSWB".equals(request.getParameter("XDebug"))) {
+                if (debug != null && debug && "IYUTERESGBXVCMSWB".equals(request.getParameter("XDebug"))) {
                     userAccessToken = testUserAccessToken();
                 }
                 if (userAccessToken != null) {
                     // 获取用户登录token成功 拉取用户信息
                     WXUserInfo wxUserInfo = WeixinUtil.queryUserInfo(userAccessToken.getAccess_token(), userAccessToken.getOpenid());
-                    if (debug!=null && debug && "IYUTERESGBXVCMSWB".equals(request.getParameter("XDebug"))) {
+                    if (debug != null && debug && "IYUTERESGBXVCMSWB".equals(request.getParameter("XDebug"))) {
                         wxUserInfo = testWXUserInfo();
                     }
                     if (wxUserInfo != null) {
@@ -116,8 +116,7 @@ public class LoginController {
             }
             jedisUtil.del(state);
         } else {
-            logger.info("登录校验码不存在:" + state);
-            throw new BizException("登录校验码不存在:" + state);
+            logger.error("登录校验码不存在:" + state);
         }
     }
 
@@ -126,7 +125,7 @@ public class LoginController {
     public BaseResult<CustDto> getUserInfo(HttpServletRequest request, HttpServletResponse response) {
         CustDto custDto = CookieUtil.getCust(request);
         String flag = jedisUtil.get("REFRESH_CUST_INFO_") + custDto.getCustId();
-        if(StringUtils.isNotBlank(flag) && Boolean.valueOf(flag)){
+        if (StringUtils.isNotBlank(flag) && Boolean.valueOf(flag)) {
             custDto = custService.queryCustByOpenId(custDto.getOpenid()).getData();
         }
         return new BaseResult<>(custDto);
@@ -160,7 +159,7 @@ public class LoginController {
         //处理微信用户信息
         CustDto custDto = new CustDto();
         BeanUtils.copyProperties(wxUserInfo, custDto);
-        if(StringUtils.isBlank(wxUserInfo.getHeadimgurl())) {
+        if (StringUtils.isBlank(wxUserInfo.getHeadimgurl())) {
             custDto.setHeadImgUrl(defaultHeaderImg);
         } else {
             custDto.setHeadImgUrl(wxUserInfo.getHeadimgurl());
@@ -170,10 +169,10 @@ public class LoginController {
         // 计算token失效时间
         int expireSecond = Integer.valueOf(userAccessToken.getExpires_in());
         userAccessToken.setExpires_in((expireSecond * 1000 + System.currentTimeMillis()) + "");
-        if (baseResult.getCode() == BaseConstant.SUCCESS && baseResult.getData()!=null) {
+        if (baseResult.getCode() == BaseConstant.SUCCESS && baseResult.getData() != null) {
             custService.refreshCustByOpenId(custDto, userAccessToken);
         } else {
-            if(StringUtils.isNotBlank(recommend)) {
+            if (StringUtils.isNotBlank(recommend)) {
                 custDto.setRecommend(recommend.toUpperCase());
             }
             BaseResult<String> custBaseResult = custService.addCust(custDto, userAccessToken);
@@ -196,7 +195,7 @@ public class LoginController {
             String token = CookieUtil.encrypt(tmp);
             // 设置cookie session token
             CookieUtil.setSession(request, BaseConstant.USER_COOKIE_NAME, token);
-            if(expireSecond!=null) {
+            if (expireSecond != null) {
                 jedisUtil.set(token, JSON.toJSONString(custInfo), expireSecond);
             }
             CookieUtil.setCookie(response, BaseConstant.USER_COOKIE_NAME, token);
