@@ -78,8 +78,12 @@ public class LoginController {
     @RequestMapping("/api/loginByWx")
     public void login(HttpServletRequest request, HttpServletResponse response, String targetUrl, String code, String state) {
         // 检验用户登录随机码
-        if (jedisUtil.exists(state)) {
-            String expireTime = jedisUtil.get(state);
+        if(StringUtils.isBlank(state)){
+            logger.info("登录校验码错误");
+            throw new BizException("登录校验码错误");
+        }
+        String expireTime = jedisUtil.get(state);
+        if (StringUtils.isNotBlank(expireTime)) {
             if (System.currentTimeMillis() - Long.parseLong(expireTime) > 0) {
                 logger.info("登录校验码失效:" + state);
                 throw new BizException("登录校验码失效:" + state);
