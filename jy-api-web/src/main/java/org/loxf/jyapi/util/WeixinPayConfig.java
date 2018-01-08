@@ -18,7 +18,8 @@ public class WeixinPayConfig implements WXPayConfig {
     }
 
     public void initCert() throws Exception {
-        File file = new File(BaseConstant.WEIXIN_APICLIENT_CERT);
+        String WEIXIN_APICLIENT_CERT = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "WEIXIN_APICLIENT_CERT").getConfigValue();
+        File file = new File(WEIXIN_APICLIENT_CERT);
         InputStream certStream = new FileInputStream(file);
         this.certData = new byte[(int) file.length()];
         certStream.read(this.certData);
@@ -28,8 +29,9 @@ public class WeixinPayConfig implements WXPayConfig {
     public static SSLContext queryWeixinSSL() throws Exception {
         if (sslContextWeixin == null) {
             String WX_MCHID = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "WX_MCHID").getConfigValue();
+            String WEIXIN_APICLIENT_CERT = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "WEIXIN_APICLIENT_CERT").getConfigValue();
             KeyStore keyStore = KeyStore.getInstance("PKCS12");
-            FileInputStream instream = new FileInputStream(new File(BaseConstant.WEIXIN_APICLIENT_CERT));
+            FileInputStream instream = new FileInputStream(new File(WEIXIN_APICLIENT_CERT));
             keyStore.load(instream, WX_MCHID.toCharArray());
             instream.close();
             // Trust own CA and all self-signed certs
