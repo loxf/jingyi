@@ -5,6 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.loxf.jyadmin.base.bean.BaseResult;
 import org.loxf.jyadmin.base.constant.BaseConstant;
 import org.loxf.jyadmin.base.exception.BizException;
+import org.loxf.jyadmin.base.util.IdGenerator;
 import org.loxf.jyadmin.base.util.JedisUtil;
 import org.loxf.jyadmin.base.util.weixin.WeixinUtil;
 import org.loxf.jyadmin.base.util.weixin.bean.UserAccessToken;
@@ -25,10 +26,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLEncoder;
-import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 
 @Controller
 public class LoginController {
@@ -47,7 +45,7 @@ public class LoginController {
     @RequestMapping("/api/login")
     public void login(HttpServletRequest request, HttpServletResponse response, String targetUrl) {
         // 获取登录随机code，五分钟失效
-        String code = getRandomCharAndNumr(8) + System.currentTimeMillis();
+        String code = IdGenerator.generate("JYL");
         String appId = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "WX_APPID").getConfigValue();
         String indexUrl = JYZX_INDEX_URL;
         String loginUrl = WeixinUtil.getLoginUrl(appId, targetUrl, code, indexUrl);
@@ -207,26 +205,5 @@ public class LoginController {
             logger.error("TOKEN加密失败", e);
         }
         return custInfo;
-    }
-
-    /**
-     * 获取随机字母数字组合
-     *
-     * @param length 字符串长度
-     * @return
-     */
-    private static String getRandomCharAndNumr(Integer length) {
-        String str = "";
-        Random random = new Random();
-        for (int i = 0; i < length; i++) {
-            boolean b = random.nextBoolean();
-            if (b) { // 字符串
-                // int choice = random.nextBoolean() ? 65 : 97; 取得65大写字母还是97小写字母
-                str += (char) (65 + random.nextInt(26));// 取得大写字母
-            } else { // 数字
-                str += String.valueOf(random.nextInt(10));
-            }
-        }
-        return str;
     }
 }
