@@ -230,7 +230,11 @@ public class DetailController {
             if(videoConfigDtoBaseResult.getCode()==BaseConstant.FAILED || videoConfigDtoBaseResult.getData()==null){
                 return new BaseResult(BaseConstant.FAILED, "获取视频失败");
             }
-            result.put("mainMedia", videoConfigDtoBaseResult.getData().getVideoUnique());
+            String videoUrl = videoConfigDtoBaseResult.getData().getVideoUrl();
+            if(StringUtils.isNotBlank(videoUrl)) {
+                result.put("mainMedia", videoUrl);
+                result.put("mediaType", videoUrl.substring(videoUrl.lastIndexOf(".") + 1));
+            }
             result.put("pic", offerDto.getOfferPic());
             result.put("videoId", offerDto.getMainMedia());
             String metaDataStr = offerDto.getMetaData();
