@@ -225,16 +225,14 @@ public class DetailController {
 
             result.put("isPlay", (canPlay?1:0));
             result.put("btns", btns);
-            // 获取乐视视频ID
-            BaseResult<VideoConfigDto> videoConfigDtoBaseResult = videoConfigService.queryVideo(offerDto.getMainMedia());
-            if(videoConfigDtoBaseResult.getCode()==BaseConstant.FAILED || videoConfigDtoBaseResult.getData()==null){
-                return new BaseResult(BaseConstant.FAILED, "获取视频失败");
+            // 获取视频链接
+            BaseResult<String> videoUrlBaseResult = videoConfigService.queryUrl(offerDto.getMainMedia(),"m3u8_hd");
+            if(videoUrlBaseResult.getCode()==BaseConstant.FAILED){
+                return new BaseResult(BaseConstant.FAILED, videoUrlBaseResult.getMsg());
             }
-            String videoUrl = videoConfigDtoBaseResult.getData().getVideoUrl();
-            if(StringUtils.isNotBlank(videoUrl)) {
-                result.put("mainMedia", videoUrl);
-                result.put("mediaType", videoUrl.substring(videoUrl.lastIndexOf(".") + 1));
-            }
+            String videoUrl = videoUrlBaseResult.getData();
+            result.put("mainMedia", videoUrl);
+            result.put("mediaType", videoUrl.substring(videoUrl.lastIndexOf(".") + 1));
             result.put("pic", offerDto.getOfferPic());
             result.put("videoId", offerDto.getMainMedia());
             String metaDataStr = offerDto.getMetaData();
