@@ -26,6 +26,8 @@ public class BaseInterceptor extends HandlerInterceptorAdapter {
     private static String [] excludeUrl = {"/api/weixin/*", "/api/login", "/api/loginByWx"};
     @Value("#{configProperties['SYSTEM.DEBUG']}")
     private Boolean debug;
+    @Value("#{configProperties['JYZX.ENV']}")
+    private String env;
     private static String basePic = null ;
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
@@ -102,7 +104,7 @@ public class BaseInterceptor extends HandlerInterceptorAdapter {
             // 用户已经登录
             String tmp = CookieUtil.decrypt(token);
             String tokenARR[] = tmp.split(CookieUtil.TOKEN_SPLIT);
-            if(tokenARR.length!=3 || !tokenARR[0].equals(CookieUtil.TOKEN_PREFIX)){
+            if(tokenARR.length!=3 || !tokenARR[0].equals(env)){
                 return false;
             } else {
                 long startTime = Long.parseLong(tokenARR[2]);

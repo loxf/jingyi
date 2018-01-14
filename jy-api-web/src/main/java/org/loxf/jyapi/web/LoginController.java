@@ -189,7 +189,7 @@ public class LoginController {
         // 获取最新的cust信息
         CustDto custInfo = custService.queryCustByOpenId(openid).getData();
         // 生成 系统TOKEN
-        String tmp = CookieUtil.TOKEN_PREFIX + CookieUtil.TOKEN_SPLIT + custInfo.getCustId()
+        String tmp = jedisUtil.getNameSpace() + CookieUtil.TOKEN_SPLIT + custInfo.getCustId()
                 + CookieUtil.TOKEN_SPLIT + System.currentTimeMillis();
         try {
             String token = CookieUtil.encrypt(tmp);

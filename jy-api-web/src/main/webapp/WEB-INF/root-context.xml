@@ -92,6 +92,7 @@
             <map>
                 <entry key="SYSTEM.DEBUG" value="${SYSTEM.DEBUG}"></entry>
                 <entry key="JYZX.INDEX.URL" value="${JYZX.INDEX.URL}"></entry>
+                <entry key="JYZX.ENV" value="${env}"></entry>
             </map>
         </property>
     </bean>
