@@ -87,4 +87,16 @@
     <dubbo:reference timeout="${dubbo.client.timeout}" version="${dubbo.client.version}"
                      interface="org.loxf.jyadmin.client.service.NoticeService" id="noticeService"/>
 
+    <dubbo:reference timeout="${dubbo.client.timeout}" version="${dubbo.client.version}"
+                     interface="org.loxf.jyadmin.client.service.CertifyConfigService" id="certifyConfigService"/>
+
+    <dubbo:reference timeout="${dubbo.client.timeout}" version="${dubbo.client.version}"
+                     interface="org.loxf.jyadmin.client.service.ClassQuestionService" id="classQuestionService"/>
+
+    <dubbo:reference timeout="${dubbo.client.timeout}" version="${dubbo.client.version}"
+                     interface="org.loxf.jyadmin.client.service.CustCertifyService" id="custCertifyService"/>
+
+    <dubbo:reference timeout="${dubbo.client.timeout}" version="${dubbo.client.version}"
+                     interface="org.loxf.jyadmin.client.service.CustScoreService" id="custScoreService"/>
+
 </beans>
