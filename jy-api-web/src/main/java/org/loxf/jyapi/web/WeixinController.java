@@ -97,8 +97,9 @@ public class WeixinController {
                         return;
                     }
                 } else {
-                    Map map = createMsgResp((String)msgMap.get("FromUserName"), System.currentTimeMillis(), WeChatMessageConstant.MESSAGE_TEXT,
-                            "亲爱的会员，我们还在努力的构建智能客服系统，如果你有疑问，现在可以直接咨询班主任。");
+                    String text = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_COM, "WX_REPLY_MSG_TEXT",
+                            "亲爱的会员，我们还在努力的构建智能客服系统，如果你有疑问，现在可以直接咨询班主任。").getConfigValue();
+                    Map map = createMsgResp((String)msgMap.get("FromUserName"), System.currentTimeMillis(), WeChatMessageConstant.MESSAGE_TEXT, text);
                     responseXml(map2Xmlstring(map, null), response);
                     return;
                 }
