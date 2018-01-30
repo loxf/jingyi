@@ -243,7 +243,7 @@ public class DetailController {
                 } else {
                     result.put("teacher", null);
                 }
-                result.put("exam", metaData.containsKey("EXAMENABLE") && metaData.getBoolean("EXAMENABLE"));
+                result.put("exam", metaData.containsKey("EXAMENABLE") && metaData.getBoolean("EXAMENABLE") && canPlay);
             } else {
                 result.put("teacher", null);
                 result.put("exam", false);
