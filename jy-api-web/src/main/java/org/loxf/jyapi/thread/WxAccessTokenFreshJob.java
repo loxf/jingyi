@@ -63,7 +63,9 @@ public class WxAccessTokenFreshJob extends JOB {
             String expireTime = jedisUtil.get(token);
             if(StringUtils.isBlank(expireTime)){
                 accessToken = WeixinUtil.queryAccessToken(appId, appSecret);
-                jsTicket = WeixinUtil.queryJsTicket(accessToken.getAccess_token());
+                if(accessToken!=null) {
+                    jsTicket = WeixinUtil.queryJsTicket(accessToken.getAccess_token());
+                }
             }else if(Long.parseLong(expireTime)-System.currentTimeMillis()<10*60*1000){// 最后十分钟 刷新access_token
                 accessToken = WeixinUtil.queryAccessToken(appId, appSecret);
                 jsTicket = WeixinUtil.queryJsTicket(accessToken.getAccess_token());

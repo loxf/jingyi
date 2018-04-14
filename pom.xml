@@ -16,7 +16,7 @@
     <properties>
         <java.version>1.8</java.version>
         <spring.version>4.3.0.RELEASE</spring.version>
-        <jyadmin.version>1.0.0-SNAPSHOT</jyadmin.version>
+        <jyadmin.version>1.0.2-SNAPSHOT</jyadmin.version>
         <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
     </properties>
 
