@@ -80,7 +80,7 @@ public class IndexController {
 
     private JSONObject createIcon(String name, String code){
         JSONObject jsonObject = new JSONObject();
-        String img = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_COM, "INDEX_ICON_CLASS", "").getConfigValue();
+        String img = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_COM, code, "").getConfigValue();
         jsonObject.put("code", code);
         jsonObject.put("img", img);
         jsonObject.put("name", name);
