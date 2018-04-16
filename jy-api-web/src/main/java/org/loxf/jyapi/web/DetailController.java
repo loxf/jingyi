@@ -295,8 +295,11 @@ public class DetailController {
             btns.add(createBtn(SHARE_FRIEND, "分享好友一起学习", 1, buyObj, null));
         } else {
             JSONObject buyPrivi = null;
+            if (StringUtils.isNotBlank(buyPriviStr)) {
+                buyPrivi = JSON.parseObject(buyPriviStr);
+            }
             // 如果没有购买过，判断是否可以购买他的套餐
-            if (StringUtils.isBlank(buyPriviStr)) {
+            if (buyPrivi==null || buyPrivi.size()<=0) {
                 // 不能单独购买，判断当前是否有套餐，如果有，判断套餐是否可以购买
                 OfferDto parentOffer = findParentOffer(offerId);
                 if(parentOffer==null) {
@@ -308,12 +311,8 @@ public class DetailController {
                     str = "购买套餐";
                     buyObj = parentOffer.getOfferId();
                 }
-            } else {
-                // 可以购买
-                buyPrivi = JSON.parseObject(buyPriviStr);
-
             }
-            if(buyPrivi!=null) {
+            if(buyPrivi!=null && buyPrivi.size()>0) {
                 if (lv.equals("VIP") || lv.equals("SVIP")) {
                     // 会员
                     Object price = buyPrivi.get(lv);
@@ -411,6 +410,9 @@ public class DetailController {
                         }
                     }
                 }
+            } else {
+                canPlay = false;
+                btns.add(createBtn(CANNOT_BUY, "不能直接" + str, 0, buyObj, null));
             }
         }
         return canPlay;
