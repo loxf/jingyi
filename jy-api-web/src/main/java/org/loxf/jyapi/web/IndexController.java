@@ -63,7 +63,28 @@ public class IndexController {
         if(recommendResult.getCode()==BaseConstant.SUCCESS && recommendResult.getData()!=null){
             result.put("recommend", recommendResult.getData());
         }
+        // 首页图标
+        List<JSONObject> icons = new ArrayList<>();
+        icons.add(createIcon("课程分类", "INDEX_ICON_CLASS"));
+        icons.add(createIcon("推广分享", "INDEX_ICON_SHARE"));
+        icons.add(createIcon("关注公众号", "INDEX_ICON_QR"));
+        icons.add(createIcon("添加班主任", "INDEX_ICON_BZR"));
+        icons.add(createIcon("会员升级", "INDEX_ICON_VIP"));
+        icons.add(createIcon("学馆新闻", "INDEX_ICON_NEWS"));
+        icons.add(createIcon("面授课程", "INDEX_ICON_FACECLASS"));
+        icons.add(createIcon("更多功能", "INDEX_ICON_MORE"));
+        icons.add(createIcon("代理商", "INDEX_ICON_DLS"));
+        result.put("icons", icons);
         return new BaseResult(result);
+    }
+
+    private JSONObject createIcon(String name, String code){
+        JSONObject jsonObject = new JSONObject();
+        String img = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_COM, code, "").getConfigValue();
+        jsonObject.put("code", code);
+        jsonObject.put("img", img);
+        jsonObject.put("name", name);
+        return jsonObject;
     }
 
     /**
