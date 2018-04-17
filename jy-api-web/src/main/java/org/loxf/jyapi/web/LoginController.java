@@ -56,7 +56,7 @@ public class LoginController {
                     loginUrl = loginUrl.replaceAll(indexUrl, "http://127.0.0.1:8081");
                 }
             }
-            jedisUtil.set(code, (System.currentTimeMillis() + 5 * 60 * 1000) + "", 5 * 60);
+            jedisUtil.set(code, "0", 5 * 60);
             logger.info("登录：" + loginUrl);
             response.sendRedirect(loginUrl);
         } catch (IOException e) {
@@ -77,16 +77,21 @@ public class LoginController {
     public void login(HttpServletRequest request, HttpServletResponse response, String targetUrl, String code, String state) {
         // 检验用户登录随机码
         if (StringUtils.isBlank(state)) {
-            logger.info("登录校验码错误");
-            throw new BizException("登录校验码错误");
+            logger.info("登录校验码为空");
+            throw new BizException("登录校验码为空");
         }
-        String expireTime = jedisUtil.get(state);
-        if (StringUtils.isNotBlank(expireTime)) {
-            if (System.currentTimeMillis() - Long.parseLong(expireTime) > 0) {
+        String validNbr = jedisUtil.get(state);
+        if (StringUtils.isNotBlank(validNbr)) {
+            if (3 - Integer.parseInt(validNbr) <= 0) {
                 logger.info("登录校验码失效:" + state);
                 throw new BizException("登录校验码失效:" + state);
             } else {
+                // 设置可用次数
+                jedisUtil.set(state, (Integer.parseInt(validNbr)+1)+"");
                 // 登录成功
+                // 设置图片服务器地址
+                CookieUtil.setCookie(response, "PIC_SERVER_URL",
+                        ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "PIC_SERVER_URL").getConfigValue());
                 // 请求用户信息
                 String appId = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "WX_APPID").getConfigValue();
                 String appSecret = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "WX_APPSECRET").getConfigValue();
@@ -104,17 +109,15 @@ public class LoginController {
                         Map<String, String> paramMap = UrlUtil.URLRequest(targetUrl);
                         CustDto custDto = settingUser(request, response, paramMap.get("recommend"), userAccessToken, wxUserInfo);
                         try {
-                            // 图片服务器地址
-                            CookieUtil.setCookie(response, "PIC_SERVER_URL",
-                                    ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "PIC_SERVER_URL").getConfigValue());
                             response.sendRedirect(targetUrl);
                         } catch (IOException e) {
                             logger.error("登录后跳转页面失败", e);
                         }
                     }
+                } else {
+                    logger.error("用户accessToken为空");
                 }
             }
-            jedisUtil.del(state);
         } else {
             logger.error("登录校验码不存在:" + state);
         }
