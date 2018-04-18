@@ -63,6 +63,7 @@ public class CustController {
         BaseResult<JSONObject> accountDtoBaseResult = accountService.queryAccount(custDto.getCustId());
         JSONObject jsonObject = accountDtoBaseResult.getData();
         jsonObject.put("email", custDto.getEmail());
+        jsonObject.put("userLevel", custDto.getUserLevel());
         jsonObject.put("isChinese", custDto.getIsChinese());
         jsonObject.put("nickName", custDto.getNickName());
         jsonObject.put("phone", custDto.getPhone());
