@@ -19,12 +19,16 @@ public class CookieUtil {
     public static String TOKEN_PREFIX = "JY_USER";
     public static String TOKEN_SPLIT = "#JY#";
 
-    public static void setCookie(HttpServletResponse response, String cookieName, String value) {
+    public static void setCookie(HttpServletResponse response, String cookieName, String value, String domain) {
         Cookie cookie = new Cookie(cookieName, value);
-        cookie.setDomain("jingyizaixian.com");
         cookie.setPath("/");
+        cookie.setDomain(domain);
         cookie.setMaxAge(24 * 60 * 60);
         response.addCookie(cookie);
+    }
+
+    public static void setCookie(HttpServletResponse response, String cookieName, String value) {
+        setCookie(response, cookieName, value, "jingyizaixian.com");
     }
 
     public static void rmCookie(HttpServletRequest request, HttpServletResponse response, String cookieName){
