@@ -290,11 +290,11 @@ public class OrderController {
                 if (payBaseResult.getCode() == BaseConstant.SUCCESS && payBaseResult.getData()){
                     // 支付成功
                     BaseResult baseResult1 = orderService.completeOrder(orderId, null, 3, "支付成功");
-                    if(baseResult.getCode()==BaseConstant.SUCCESS &&
+                    /*if(baseResult.getCode()==BaseConstant.SUCCESS &&
                             (orderDto.getOrderType()==3 || orderDto.getOrderType()==1)){
                         // 如果购买的是VIP，设置用户信息刷新标志
                         jedisUtil.set("REFRESH_CUST_INFO_" + orderDto.getCustId(), "true", 60);
-                    }
+                    }*/
                     return baseResult1;
                 } else {
                     return payBaseResult;

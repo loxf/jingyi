@@ -59,7 +59,8 @@ public class CustController {
     @RequestMapping("/api/cust/init")
     @ResponseBody
     public BaseResult init(HttpServletRequest request) {
-        CustDto custDto = CookieUtil.getCust(request);
+        String custId = CookieUtil.getCustId(request);
+        CustDto custDto = custService.queryCustByCustId(custId).getData();
         BaseResult<JSONObject> accountDtoBaseResult = accountService.queryAccount(custDto.getCustId());
         JSONObject jsonObject = accountDtoBaseResult.getData();
         jsonObject.put("email", custDto.getEmail());
