@@ -89,16 +89,23 @@ public class LoginController {
                 // 设置可用次数
                 jedisUtil.set(state, (Integer.parseInt(validNbr)+1)+"");
                 // 登录成功
-                if("qa".equalsIgnoreCase(jedisUtil.getNameSpace())) {
+                if(targetUrl.indexOf("local.jingyizaixian.com")>-1){
                     // 设置图片服务器地址
                     CookieUtil.setCookie(response, "PIC_SERVER_URL",
                             ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "PIC_SERVER_URL").getConfigValue(),
-                            "test.jingyizaixian.com");
-                } else if("online".equalsIgnoreCase(jedisUtil.getNameSpace())){
-                    // 设置图片服务器地址
-                    CookieUtil.setCookie(response, "PIC_SERVER_URL",
-                            ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME,"PIC_SERVER_URL").getConfigValue(),
-                            "www.jingyizaixian.com");
+                            "local.jingyizaixian.com");
+                } else {
+                    if ("qa".equalsIgnoreCase(jedisUtil.getNameSpace())) {
+                        // 设置图片服务器地址
+                        CookieUtil.setCookie(response, "PIC_SERVER_URL",
+                                ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "PIC_SERVER_URL").getConfigValue(),
+                                "test.jingyizaixian.com");
+                    } else if ("online".equalsIgnoreCase(jedisUtil.getNameSpace())) {
+                        // 设置图片服务器地址
+                        CookieUtil.setCookie(response, "PIC_SERVER_URL",
+                                ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "PIC_SERVER_URL").getConfigValue(),
+                                "www.jingyizaixian.com");
+                    }
                 }
                 // 请求用户信息
                 String appId = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "WX_APPID").getConfigValue();

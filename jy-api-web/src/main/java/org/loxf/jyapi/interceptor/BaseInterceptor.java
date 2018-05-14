@@ -147,10 +147,6 @@ public class BaseInterceptor extends HandlerInterceptorAdapter {
     }
 
     private void setResponse(HttpServletRequest request, HttpServletResponse response){
-        if(StringUtils.isBlank(basePic)) {
-            basePic = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "PIC_SERVER_URL").getConfigValue();
-        }
-        request.setAttribute("basePic", basePic);
         response.setHeader("Access-Control-Allow-Origin","*");
         response.setHeader("Access-Control-Allow-Methods","GET, POST, PUT, DELETE, OPTIONS");
         response.setHeader("Access-Control-Allow-Headers","Origin, X-Requested-With, Content-Type, Accept, Cookie");
