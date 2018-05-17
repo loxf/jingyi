@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.Map;
@@ -70,14 +71,16 @@ public class LoginController {
     /**
      * @param request
      * @param response
-     * @param wxUserInfo 用户信息
-     * @param recommend 推荐人
-     * @param code 小程序登录随机码
      */
     @RequestMapping("/api/loginByXcx")
     @ResponseBody
-    public BaseResult loginByXcx(HttpServletRequest request, HttpServletResponse response, WXUserInfo wxUserInfo,
-                                 String recommend, String code) {
+    public BaseResult loginByXcx(HttpServletRequest request, HttpServletResponse response) {
+        String paramStr = getRequestPayload(request);
+        JSONObject paramJson = JSON.parseObject(paramStr);
+        // 推荐人
+        String recommend = paramJson.getString("recommend");
+        // 小程序登录随机码
+        String code = paramJson.getString("code");
         String xcxId = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "WX_XCX_APPID").getConfigValue();
         String xcxSecret = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "WX_XCX_SECRET").getConfigValue();
         XCXLoginInfo xcxLoginInfo = WeixinUtil.loginByXCXCode(xcxId, xcxSecret, code);
@@ -86,12 +89,11 @@ public class LoginController {
         }
         // 根据unionId查询用户是否存在
         BaseResult<CustDto> custDtoBaseResult = custService.queryCustByUnionId(xcxLoginInfo.getUnionid());
+        // 用户信息
         CustDto custDto = new CustDto();
-        BeanUtils.copyProperties(wxUserInfo, custDto);
-        if (StringUtils.isBlank(wxUserInfo.getHeadimgurl())) {
+        BeanUtils.copyProperties(paramJson, custDto);
+        if (StringUtils.isBlank(custDto.getHeadImgUrl())) {
             custDto.setHeadImgUrl(defaultHeaderImg);
-        } else {
-            custDto.setHeadImgUrl(wxUserInfo.getHeadimgurl());
         }
         if(custDtoBaseResult.getCode()==BaseConstant.FAILED){
             // 不存在，则新增
@@ -113,6 +115,19 @@ public class LoginController {
         return new BaseResult(jsonObject);
     }
 
+    private String getRequestPayload(HttpServletRequest req) {
+        StringBuilder sb = new StringBuilder();
+        try(BufferedReader reader = req.getReader();) {
+            char[]buff = new char[1024];
+            int len;
+            while((len = reader.read(buff)) != -1) {
+                sb.append(buff,0, len);
+            }
+        }catch (IOException e) {
+            e.printStackTrace();
+        }
+        return sb.toString();
+    }
     /**
      * 根据小程序临时登录token登录
      * @param request
