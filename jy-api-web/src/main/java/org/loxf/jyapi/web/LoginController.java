@@ -105,6 +105,7 @@ public class LoginController {
         } else {
             // 存在 更新
             custDto.setCustId(custDtoBaseResult.getData().getCustId());
+            custDto.setXcxOpenid(xcxLoginInfo.getOpenid());
             custDto.setUnionid(xcxLoginInfo.getUnionid());
             custService.refreshCustByUnionId(custDtoBaseResult.getData(), xcxLoginInfo);
         }
