@@ -11,6 +11,7 @@ import org.loxf.jyapi.exception.NotLoginException;
 import org.loxf.jyapi.util.ConfigUtil;
 import org.loxf.jyapi.util.CookieUtil;
 import org.loxf.jyadmin.base.bean.BaseResult;
+import org.loxf.jyapi.util.JyDomainUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -94,7 +95,7 @@ public class BaseInterceptor extends HandlerInterceptorAdapter {
                 } else {
                     // 反写session cookie
                     CookieUtil.setSession(request, BaseConstant.USER_COOKIE_NAME, token);
-                    CookieUtil.setCookie(response, BaseConstant.USER_COOKIE_NAME, token);
+                    CookieUtil.setCookie(response, BaseConstant.USER_COOKIE_NAME, token, JyDomainUtil.getDomain(request.getRequestURL().toString()));
                 }
             } else {
                 return false;
@@ -155,19 +156,7 @@ public class BaseInterceptor extends HandlerInterceptorAdapter {
         response.setCharacterEncoding("UTF-8");
         CookieUtil.setCookie(response, "PIC_SERVER_URL",
                 ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "PIC_SERVER_URL").getConfigValue(),
-                getDomain(request.getRequestURL().toString()));
+            JyDomainUtil.getDomain(request.getRequestURL().toString()));
     }
 
-
-    private String getDomain(String url){
-        if(url.indexOf("dev.jingyizaixian.com")>-1){
-            return "dev.jingyizaixian.com";
-        } else if(url.indexOf("test.jingyizaixian.com")>-1){
-            return "test.jingyizaixian.com";
-        } else if(url.indexOf("www.jingyizaixian.com")>-1){
-            return "www.jingyizaixian.com";
-        } else {
-            return "www.jingyizaixian.com";
-        }
-    }
 }
