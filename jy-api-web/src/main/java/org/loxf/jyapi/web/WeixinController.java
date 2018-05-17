@@ -234,6 +234,7 @@ public class WeixinController {
         try {
             notifyMap = WXPayUtil.xmlToMap(notifyData);
             if (notifyMap.get("result_code").equals("SUCCESS")) {
+                String env = notifyMap.get("device_info");
                 WeixinPayConfig config = new WeixinPayConfig();
                 WXPay wxpay = new WXPay(config);
                 if (wxpay.isPayResultNotifySignatureValid(notifyMap)) {

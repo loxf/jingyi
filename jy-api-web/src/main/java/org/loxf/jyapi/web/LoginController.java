@@ -1,6 +1,7 @@
 package org.loxf.jyapi.web;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import org.apache.commons.lang3.StringUtils;
 import org.loxf.jyadmin.base.bean.BaseResult;
 import org.loxf.jyadmin.base.constant.BaseConstant;
@@ -10,6 +11,7 @@ import org.loxf.jyadmin.base.util.JedisUtil;
 import org.loxf.jyadmin.base.util.weixin.WeixinUtil;
 import org.loxf.jyadmin.base.util.weixin.bean.UserAccessToken;
 import org.loxf.jyadmin.base.util.weixin.bean.WXUserInfo;
+import org.loxf.jyadmin.base.util.weixin.bean.XCXLoginInfo;
 import org.loxf.jyadmin.client.dto.CustDto;
 import org.loxf.jyadmin.client.service.CustService;
 import org.loxf.jyapi.util.*;
@@ -64,6 +66,85 @@ public class LoginController {
             throw new RuntimeException("登录失败", e);
         }
     }
+
+    /**
+     * @param request
+     * @param response
+     * @param wxUserInfo 用户信息
+     * @param recommend 推荐人
+     * @param code 小程序登录随机码
+     */
+    @RequestMapping("/api/loginByXcx")
+    @ResponseBody
+    public BaseResult loginByXcx(HttpServletRequest request, HttpServletResponse response, WXUserInfo wxUserInfo,
+                                 String recommend, String code) {
+        String xcxId = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "WX_XCX_APPID").getConfigValue();
+        String xcxSecret = ConfigUtil.getConfig(BaseConstant.CONFIG_TYPE_RUNTIME, "WX_XCX_SECRET").getConfigValue();
+        XCXLoginInfo xcxLoginInfo = WeixinUtil.loginByXCXCode(xcxId, xcxSecret, code);
+        if(xcxLoginInfo==null){
+            return new BaseResult(BaseConstant.FAILED, "登录校验码不正确");
+        }
+        // 根据unionId查询用户是否存在
+        BaseResult<CustDto> custDtoBaseResult = custService.queryCustByUnionId(xcxLoginInfo.getUnionid());
+        CustDto custDto = new CustDto();
+        BeanUtils.copyProperties(wxUserInfo, custDto);
+        if (StringUtils.isBlank(wxUserInfo.getHeadimgurl())) {
+            custDto.setHeadImgUrl(defaultHeaderImg);
+        } else {
+            custDto.setHeadImgUrl(wxUserInfo.getHeadimgurl());
+        }
+        if(custDtoBaseResult.getCode()==BaseConstant.FAILED){
+            // 不存在，则新增
+            if (StringUtils.isNotBlank(recommend)) {
+                custDto.setRecommend(recommend.toUpperCase());
+            }
+            BaseResult<String> custBaseResult = custService.addCust(custDto, xcxLoginInfo);
+            custDto.setCustId(custBaseResult.getData());
+        } else {
+            // 存在 更新
+            custDto.setCustId(custDtoBaseResult.getData().getCustId());
+            custDto.setUnionid(xcxLoginInfo.getUnionid());
+            custService.refreshCustByUnionId(custDtoBaseResult.getData(), xcxLoginInfo);
+        }
+        String tmpLoginCode = IdGenerator.generate("XCX");
+        jedisUtil.set(tmpLoginCode, xcxLoginInfo.getUnionid(), 5 * 60);
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("token", tmpLoginCode);
+        return new BaseResult(jsonObject);
+    }
+
+    /**
+     * 根据小程序临时登录token登录
+     * @param request
+     * @param response
+     * @param token
+     */
+    @RequestMapping("/api/loginByXcxTmpToken")
+    @ResponseBody
+    public BaseResult loginByXcxTmpToken(HttpServletRequest request, HttpServletResponse response, String token) {
+        // 检验用户登录随机码
+        if (StringUtils.isBlank(token)) {
+            logger.info("登录Token为空");
+            throw new BizException("登录Token为空");
+        }
+        String unionid = jedisUtil.get(token);
+        try {
+            if (StringUtils.isNotBlank(unionid)) {
+                setCustInfoSessionAndCookie(request, response, custService, jedisUtil, unionid,
+                    60*60*2, "XCX");
+                return new BaseResult(BaseConstant.SUCCESS, "登录成功");
+            } else {
+                logger.error("登录校验码不存在或已失效");
+                return new BaseResult(BaseConstant.FAILED, "登录校验码不存在或已失效");
+            }
+        } catch (Exception e){
+            logger.error("通过小程序登录失败", e);
+            return new BaseResult(BaseConstant.FAILED, "通过小程序登录失败");
+        } finally {
+            jedisUtil.del(token);
+        }
+    }
+
 
     /**
      * 登录
@@ -124,9 +205,6 @@ public class LoginController {
     public BaseResult<CustDto> getUserInfo(HttpServletRequest request, HttpServletResponse response) {
         String custId = CookieUtil.getCustId(request);
         CustDto custDto = custService.queryCustByCustId(custId).getData();
-        /*String flag = jedisUtil.get("REFRESH_CUST_INFO_") + custDto.getCustId();
-        if (StringUtils.isNotBlank(flag) && Boolean.valueOf(flag)) {
-        }*/
         return new BaseResult<>(custDto);
     }
 
@@ -169,7 +247,7 @@ public class LoginController {
         int expireSecond = Integer.valueOf(userAccessToken.getExpires_in());
         userAccessToken.setExpires_in((expireSecond * 1000 + System.currentTimeMillis()) + "");
         if (baseResult.getCode() == BaseConstant.SUCCESS && baseResult.getData() != null) {
-            custService.refreshCustByOpenId(custDto, userAccessToken);
+            custService.refreshCustByUnionId(custDto, userAccessToken);
         } else {
             if (StringUtils.isNotBlank(recommend)) {
                 custDto.setRecommend(recommend.toUpperCase());
@@ -178,18 +256,18 @@ public class LoginController {
             custDto.setCustId(custBaseResult.getData());
         }
 
-        return setCustInfoSessionAndCookie(request, response, custService, jedisUtil, wxUserInfo.getOpenid(), expireSecond);
+        return setCustInfoSessionAndCookie(request, response, custService, jedisUtil, wxUserInfo.getUnionid(), expireSecond, "WX");
     }
 
 
     public static CustDto setCustInfoSessionAndCookie(HttpServletRequest request, HttpServletResponse response,
                                                       CustService custService, JedisUtil jedisUtil,
-                                                      String openid, Integer expireSecond) {
+                                                      String unionid, Integer expireSecond, String loginType) {
         // 获取最新的cust信息
-        CustDto custInfo = custService.queryCustByOpenId(openid).getData();
+        CustDto custInfo = custService.queryCustByUnionId(unionid).getData();
         // 生成 系统TOKEN
         String tmp = jedisUtil.getNameSpace() + CookieUtil.TOKEN_SPLIT + custInfo.getCustId()
-                + CookieUtil.TOKEN_SPLIT + System.currentTimeMillis();
+            + CookieUtil.TOKEN_SPLIT + System.currentTimeMillis() + CookieUtil.TOKEN_SPLIT + loginType;
         try {
             String token = CookieUtil.encrypt(tmp);
             // 设置cookie session token

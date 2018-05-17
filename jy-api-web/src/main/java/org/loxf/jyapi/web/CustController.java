@@ -199,7 +199,7 @@ public class CustController {
     @ResponseBody
     public BaseResult bindPhone(HttpServletRequest request, HttpServletResponse response,
                                 String realName, String email, String phone,
-                                Integer isChinese, String verifyCode) {
+                                Integer isChinese, String verifyCode, String loginType) {
         CustDto custDto = CookieUtil.getCust(request);
         if(custDto.getIsChinese()==null) {
             if(isChinese==1 && StringUtils.isBlank(phone)){
@@ -256,7 +256,7 @@ public class CustController {
                     sendUserBindNotice(custDto.getOpenid(), custDto.getNickName(), (isChinese == 1 ? phone : email));
                     // 刷新缓存
                     LoginController.setCustInfoSessionAndCookie(request, response, custService, jedisUtil,
-                            custDto.getOpenid(), 60*60*2);
+                            custDto.getOpenid(), 60*60*2, loginType);
                 }
                 return bindBaseResult;
             } else {
