@@ -37,6 +37,7 @@ public class BaseInterceptor extends HandlerInterceptorAdapter {
         } catch (Exception e){
             logger.error("拦截器设置response失败", e);
         }
+        logger.info("请求路径:{}, sessionId:{}", request.getRequestURI(), request.getSession().getId());
         // 判断用户是否登录系统
         if(needFilter(request.getRequestURI())) {
             if (!hasLogin(request, response)) {
