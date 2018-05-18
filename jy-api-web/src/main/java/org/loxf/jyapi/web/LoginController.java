@@ -149,7 +149,7 @@ public class LoginController {
         String unionid = jedisUtil.get(token);
         try {
             if (StringUtils.isNotBlank(unionid)) {
-                logger.info("xcx临时登录成功：", token);
+                logger.info("xcx临时登录成功：{}", token);
                 setCustInfoSessionAndCookie(request, response, custService, jedisUtil, unionid,
                     60*60*2, "XCX");
                 return new BaseResult(BaseConstant.SUCCESS, "登录成功");
