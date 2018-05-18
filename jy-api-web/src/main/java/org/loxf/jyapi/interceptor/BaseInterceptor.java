@@ -105,7 +105,7 @@ public class BaseInterceptor extends HandlerInterceptorAdapter {
             // 用户已经登录
             String tmp = CookieUtil.decrypt(token);
             String tokenARR[] = tmp.split(CookieUtil.TOKEN_SPLIT);
-            if(tokenARR.length!=3 || !tokenARR[0].equals(env)){
+            if(tokenARR.length!=4 || !tokenARR[0].equals(env)){
                 return false;
             } else {
                 long startTime = Long.parseLong(tokenARR[2]);
