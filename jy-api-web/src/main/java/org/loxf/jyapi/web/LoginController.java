@@ -100,6 +100,8 @@ public class LoginController {
             if (StringUtils.isNotBlank(recommend)) {
                 custDto.setRecommend(recommend.toUpperCase());
             }
+            custDto.setUnionid(xcxLoginInfo.getUnionid());
+            custDto.setXcxOpenid(xcxLoginInfo.getOpenid());
             BaseResult<String> custBaseResult = custService.addCust(custDto, xcxLoginInfo);
             custDto.setCustId(custBaseResult.getData());
         } else {
