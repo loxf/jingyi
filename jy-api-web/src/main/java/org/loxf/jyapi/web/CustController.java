@@ -230,6 +230,8 @@ public class CustController {
                         oldCust.setRealName(realName);
                         oldCust.setPrivilege(custDto.getPrivilege());
                         oldCust.setOpenid(custDto.getOpenid());
+                        oldCust.setXcxOpenid(custDto.getXcxOpenid());
+                        oldCust.setUnionid(custDto.getUnionid());
                         // 更新老用户信息
                         bindBaseResult = custService.updateOldCustInfo(oldCust);
                         if(bindBaseResult.getCode()==BaseConstant.SUCCESS) {
@@ -251,7 +253,7 @@ public class CustController {
                 } else {
                     bindBaseResult = custService.bindCust(custDto);
                 }
-                if(bindBaseResult.getCode()==BaseConstant.SUCCESS) {
+                if(bindBaseResult.getCode()==BaseConstant.SUCCESS && StringUtils.isNotBlank(custDto.getOpenid())) {
                     // 绑定成功发通知
                     sendUserBindNotice(custDto.getOpenid(), custDto.getNickName(), (isChinese == 1 ? phone : email));
                     // 刷新缓存

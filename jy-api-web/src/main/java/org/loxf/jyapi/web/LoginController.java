@@ -112,7 +112,7 @@ public class LoginController {
             custDto.setUnionid(xcxLoginInfo.getUnionid());
             custService.refreshCustByUnionId(custDto, xcxLoginInfo);
         }
-        String tmpLoginCode = IdGenerator.generate("XCX");
+        String tmpLoginCode = IdGenerator.generate("XCX") + "_" + System.currentTimeMillis();
         jedisUtil.set(tmpLoginCode, xcxLoginInfo.getUnionid(), 5 * 60);
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("token", tmpLoginCode);
@@ -149,11 +149,12 @@ public class LoginController {
         String unionid = jedisUtil.get(token);
         try {
             if (StringUtils.isNotBlank(unionid)) {
+                logger.info("xcx临时登录成功：", token);
                 setCustInfoSessionAndCookie(request, response, custService, jedisUtil, unionid,
                     60*60*2, "XCX");
                 return new BaseResult(BaseConstant.SUCCESS, "登录成功");
             } else {
-                logger.error("登录校验码不存在或已失效");
+                logger.error("登录校验码不存在或已失效：" + token);
                 return new BaseResult(BaseConstant.FAILED, "登录校验码不存在或已失效");
             }
         } catch (Exception e){
@@ -261,7 +262,7 @@ public class LoginController {
             custDto.setHeadImgUrl(wxUserInfo.getHeadimgurl());
         }
         custDto.setNickName(wxUserInfo.getNickname());
-        BaseResult<CustDto> baseResult = custService.queryCustByOpenId(wxUserInfo.getOpenid());
+        BaseResult<CustDto> baseResult = custService.queryCustByUnionId(wxUserInfo.getUnionid());
         // 计算token失效时间
         int expireSecond = Integer.valueOf(userAccessToken.getExpires_in());
         userAccessToken.setExpires_in((expireSecond * 1000 + System.currentTimeMillis()) + "");
