@@ -107,9 +107,10 @@ public class LoginController {
         } else {
             // 存在 更新
             custDto.setCustId(custDtoBaseResult.getData().getCustId());
+            xcxLoginInfo.setCustId(custDtoBaseResult.getData().getCustId());
             custDto.setXcxOpenid(xcxLoginInfo.getOpenid());
             custDto.setUnionid(xcxLoginInfo.getUnionid());
-            custService.refreshCustByUnionId(custDtoBaseResult.getData(), xcxLoginInfo);
+            custService.refreshCustByUnionId(custDto, xcxLoginInfo);
         }
         String tmpLoginCode = IdGenerator.generate("XCX");
         jedisUtil.set(tmpLoginCode, xcxLoginInfo.getUnionid(), 5 * 60);
