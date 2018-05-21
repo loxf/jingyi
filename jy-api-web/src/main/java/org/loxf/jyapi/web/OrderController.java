@@ -257,7 +257,7 @@ public class OrderController {
         orderDto.setBp(paramOrder.getBp());
         orderDto.setDiscount(10L);
         String ip = IPUtil.getIpAddr(request);
-        return orderService.createOrder(custDto.getOpenid(), ip, orderDto, paramOrder.getAttrList());
+        return orderService.createOrder((paramOrder.getPayType()==1?custDto.getOpenid():custDto.getXcxOpenid()), ip, orderDto, paramOrder.getAttrList());
     }
 
     /**

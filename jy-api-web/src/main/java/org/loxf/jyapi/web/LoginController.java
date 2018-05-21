@@ -90,8 +90,7 @@ public class LoginController {
         // 根据unionId查询用户是否存在
         BaseResult<CustDto> custDtoBaseResult = custService.queryCustByUnionId(xcxLoginInfo.getUnionid());
         // 用户信息
-        CustDto custDto = new CustDto();
-        BeanUtils.copyProperties(paramJson, custDto);
+        CustDto custDto = JSONObject.parseObject(paramStr, CustDto.class);
         if (StringUtils.isBlank(custDto.getHeadImgUrl())) {
             custDto.setHeadImgUrl(defaultHeaderImg);
         }
@@ -139,8 +138,8 @@ public class LoginController {
      * @param token
      */
     @RequestMapping("/api/loginByXcxTmpToken")
-    @ResponseBody
-    public BaseResult loginByXcxTmpToken(HttpServletRequest request, HttpServletResponse response, String token) {
+    // @ResponseBody
+    public void loginByXcxTmpToken(HttpServletRequest request, HttpServletResponse response, String token, String targetUrl) {
         // 检验用户登录随机码
         if (StringUtils.isBlank(token)) {
             logger.info("登录Token为空");
@@ -152,14 +151,16 @@ public class LoginController {
                 logger.info("xcx临时登录成功：{}", token);
                 setCustInfoSessionAndCookie(request, response, custService, jedisUtil, unionid,
                     60*60*2, "XCX");
-                return new BaseResult(BaseConstant.SUCCESS, "登录成功");
+                try {
+                    response.sendRedirect(targetUrl);
+                } catch (IOException e) {
+                    logger.error("登录后跳转页面失败", e);
+                }
             } else {
                 logger.error("登录校验码不存在或已失效：" + token);
-                return new BaseResult(BaseConstant.FAILED, "登录校验码不存在或已失效");
             }
         } catch (Exception e){
             logger.error("通过小程序登录失败", e);
-            return new BaseResult(BaseConstant.FAILED, "通过小程序登录失败");
         } finally {
             jedisUtil.del(token);
         }
@@ -204,7 +205,7 @@ public class LoginController {
                     }
                     if (wxUserInfo != null) {
                         Map<String, String> paramMap = UrlUtil.URLRequest(targetUrl);
-                        CustDto custDto = settingUser(request, response, paramMap.get("recommend"), userAccessToken, wxUserInfo);
+                        settingUser(request, response, paramMap.get("recommend"), userAccessToken, wxUserInfo);
                         try {
                             response.sendRedirect(targetUrl);
                         } catch (IOException e) {
