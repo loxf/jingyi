@@ -64,22 +64,23 @@ public class ConfigController {
 
     @RequestMapping("/api/system/log")
     @ResponseBody
-    public BaseResult log(HttpServletRequest request, String osType, String page, String location) {
+    public BaseResult log(HttpServletRequest request, String osType, String page, String location, String platform) {
         try {
             systemLogService.log(createLog(CookieUtil.getCustId(request), IPUtil.getIpAddr(request),
-                    osType, page, location));
+                    osType, page, location, platform));
         } finally {
             return new BaseResult();
         }
     }
 
-    private SystemLogDto createLog(String custId, String ip, String os, String page, String position) {
+    private SystemLogDto createLog(String custId, String ip, String os, String page, String position, String platform) {
         SystemLogDto log = new SystemLogDto();
         log.setCustId(custId);
         log.setIp(ip);
         log.setOs(os);
         log.setPage(page);
         log.setPosition(position);
+        log.setPlatform(platform);
         return log;
     }
 
