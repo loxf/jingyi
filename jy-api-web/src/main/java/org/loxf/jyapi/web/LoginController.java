@@ -112,7 +112,7 @@ public class LoginController {
             custService.refreshCustByUnionId(custDto, xcxLoginInfo);
         }
         String tmpLoginCode = IdGenerator.generate("XCX");
-        jedisUtil.set(custDto.getXcxOpenid() + CookieUtil.TOKEN_SPLIT + tmpLoginCode , xcxLoginInfo.getUnionid(), 5 * 60);
+        jedisUtil.set(custDto.getXcxOpenid() + CookieUtil.TOKEN_SPLIT + tmpLoginCode , xcxLoginInfo.getUnionid(), 24 * 60 * 60);
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("token", tmpLoginCode);
         jsonObject.put("openid", custDto.getXcxOpenid());
@@ -152,7 +152,7 @@ public class LoginController {
             if (StringUtils.isNotBlank(unionid)) {
                 logger.info("xcx登录成功：{}", token);
                 setCustInfoSessionAndCookie(request, response, custService, jedisUtil, unionid,
-                    60*60*2, "XCX");
+                    24 * 60 * 60, "XCX");
             } else {
                 logger.error("登录校验码不存在或已失效：" + token);
             }
