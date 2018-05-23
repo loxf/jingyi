@@ -111,10 +111,11 @@ public class LoginController {
             custDto.setUnionid(xcxLoginInfo.getUnionid());
             custService.refreshCustByUnionId(custDto, xcxLoginInfo);
         }
-        String tmpLoginCode = IdGenerator.generate("XCX") + "_" + System.currentTimeMillis();
-        jedisUtil.set(tmpLoginCode, xcxLoginInfo.getUnionid(), 5 * 60);
+        String tmpLoginCode = IdGenerator.generate("XCX");
+        jedisUtil.set(custDto.getXcxOpenid() + CookieUtil.TOKEN_SPLIT + tmpLoginCode , xcxLoginInfo.getUnionid(), 5 * 60);
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("token", tmpLoginCode);
+        jsonObject.put("openid", custDto.getXcxOpenid());
         return new BaseResult(jsonObject);
     }
 
@@ -135,34 +136,29 @@ public class LoginController {
      * 根据小程序临时登录token登录
      * @param request
      * @param response
+     * @param openid
      * @param token
+     * @param targetUrl
      */
     @RequestMapping("/api/loginByXcxTmpToken")
-    // @ResponseBody
-    public void loginByXcxTmpToken(HttpServletRequest request, HttpServletResponse response, String token, String targetUrl) {
+    public void loginByXcxTmpToken(HttpServletRequest request, HttpServletResponse response, String openid, String token, String targetUrl) {
         // 检验用户登录随机码
         if (StringUtils.isBlank(token)) {
             logger.info("登录Token为空");
             throw new BizException("登录Token为空");
         }
-        String unionid = jedisUtil.get(token);
+        String unionid = jedisUtil.get(openid + CookieUtil.TOKEN_SPLIT + token);
         try {
             if (StringUtils.isNotBlank(unionid)) {
-                logger.info("xcx临时登录成功：{}", token);
+                logger.info("xcx登录成功：{}", token);
                 setCustInfoSessionAndCookie(request, response, custService, jedisUtil, unionid,
                     60*60*2, "XCX");
-                try {
-                    response.sendRedirect(targetUrl);
-                } catch (IOException e) {
-                    logger.error("登录后跳转页面失败", e);
-                }
             } else {
                 logger.error("登录校验码不存在或已失效：" + token);
             }
+            response.sendRedirect(targetUrl);
         } catch (Exception e){
             logger.error("通过小程序登录失败", e);
-        } finally {
-            jedisUtil.del(token);
         }
     }
 
