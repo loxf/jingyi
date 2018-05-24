@@ -262,9 +262,9 @@ public class OrderController {
         return mapBaseResult;
     }
 
-    @RequestMapping("/api/canclePay")
+    @RequestMapping("/api/cancelPay")
     @ResponseBody
-    public BaseResult canclePay(String orderId, String prepayId){
+    public BaseResult cancelPay(String orderId, String prepayId){
         String existsPrepayId = jedisUtil.get("CANCLE_PAY_" + orderId);
         if(StringUtils.isBlank(existsPrepayId)){
             return new BaseResult(BaseConstant.FAILED, "订单不能取消");
@@ -272,7 +272,7 @@ public class OrderController {
         if(!existsPrepayId.equals(prepayId)){
             return new BaseResult(BaseConstant.FAILED, "预订单ID不正确");
         }
-        BaseResult baseResult = orderService.cancleOrder(orderId, "用户取消支付");
+        BaseResult baseResult = orderService.cancelOrder(orderId, "用户取消支付");
         if(baseResult.getCode()==BaseConstant.SUCCESS){
             jedisUtil.del(existsPrepayId);
         }
