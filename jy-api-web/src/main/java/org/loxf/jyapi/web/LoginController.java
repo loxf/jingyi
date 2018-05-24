@@ -75,7 +75,7 @@ public class LoginController {
     @RequestMapping("/api/loginByXcx")
     @ResponseBody
     public BaseResult loginByXcx(HttpServletRequest request, HttpServletResponse response) {
-        String paramStr = getRequestPayload(request);
+        String paramStr = RequestPayloadUtil.getRequestPayload(request);
         JSONObject paramJson = JSON.parseObject(paramStr);
         // 推荐人
         String recommend = paramJson.getString("recommend");
@@ -119,19 +119,6 @@ public class LoginController {
         return new BaseResult(jsonObject);
     }
 
-    private String getRequestPayload(HttpServletRequest req) {
-        StringBuilder sb = new StringBuilder();
-        try(BufferedReader reader = req.getReader();) {
-            char[]buff = new char[1024];
-            int len;
-            while((len = reader.read(buff)) != -1) {
-                sb.append(buff,0, len);
-            }
-        }catch (IOException e) {
-            e.printStackTrace();
-        }
-        return sb.toString();
-    }
     /**
      * 根据小程序临时登录token登录
      * @param request

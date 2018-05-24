@@ -13,6 +13,7 @@ import org.loxf.jyadmin.client.service.*;
 import org.loxf.jyapi.util.ConfigUtil;
 import org.loxf.jyapi.util.CookieUtil;
 import org.loxf.jyapi.util.IPUtil;
+import org.loxf.jyapi.util.RequestPayloadUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -264,7 +265,11 @@ public class OrderController {
 
     @RequestMapping("/api/cancelPay")
     @ResponseBody
-    public BaseResult cancelPay(String orderId, String prepayId){
+    public BaseResult cancelPay(HttpServletRequest request){
+        String paramStr = RequestPayloadUtil.getRequestPayload(request);
+        JSONObject paramJson = JSON.parseObject(paramStr);
+        String orderId = paramJson.getString("orderId");
+        String prepayId = paramJson.getString("prepayId");
         String existsPrepayId = jedisUtil.get("CANCLE_PAY_" + orderId);
         if(StringUtils.isBlank(existsPrepayId)){
             return new BaseResult(BaseConstant.FAILED, "订单不能取消");
