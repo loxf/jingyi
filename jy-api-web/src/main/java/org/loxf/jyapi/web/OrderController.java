@@ -24,6 +24,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 public class OrderController {
@@ -257,7 +258,25 @@ public class OrderController {
         orderDto.setBp(paramOrder.getBp());
         orderDto.setDiscount(10L);
         String ip = IPUtil.getIpAddr(request);
-        return orderService.createOrder((paramOrder.getPayType()==1?custDto.getOpenid():custDto.getXcxOpenid()), ip, orderDto, paramOrder.getAttrList());
+        BaseResult<Map<String, String>> mapBaseResult = orderService.createOrder((paramOrder.getPayType()==1?custDto.getOpenid():custDto.getXcxOpenid()), ip, orderDto, paramOrder.getAttrList());
+        return mapBaseResult;
+    }
+
+    @RequestMapping("/api/canclePay")
+    @ResponseBody
+    public BaseResult canclePay(String orderId, String prepayId){
+        String existsPrepayId = jedisUtil.get("CANCLE_PAY_" + orderId);
+        if(StringUtils.isBlank(existsPrepayId)){
+            return new BaseResult(BaseConstant.FAILED, "订单不能取消");
+        }
+        if(!existsPrepayId.equals(prepayId)){
+            return new BaseResult(BaseConstant.FAILED, "预订单ID不正确");
+        }
+        BaseResult baseResult = orderService.cancleOrder(orderId, "用户取消支付");
+        if(baseResult.getCode()==BaseConstant.SUCCESS){
+            jedisUtil.del(existsPrepayId);
+        }
+        return baseResult;
     }
 
     /**
@@ -308,5 +327,11 @@ public class OrderController {
         } else {
             return new BaseResult(BaseConstant.FAILED, "订单处理中");
         }
+    }
+
+    @RequestMapping("/api/queryOrder")
+    @ResponseBody
+    public BaseResult<OrderDto> queryOrder(String orderId){
+        return orderService.queryOrder(orderId);
     }
 }
