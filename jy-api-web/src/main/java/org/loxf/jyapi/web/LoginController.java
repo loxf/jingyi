@@ -116,6 +116,7 @@ public class LoginController {
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("token", tmpLoginCode);
         jsonObject.put("openid", custDto.getXcxOpenid());
+        jsonObject.put("custId", custDto.getCustId());
         return new BaseResult(jsonObject);
     }
 
