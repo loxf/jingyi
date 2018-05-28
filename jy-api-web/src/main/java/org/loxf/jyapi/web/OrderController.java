@@ -260,6 +260,9 @@ public class OrderController {
         orderDto.setDiscount(10L);
         String ip = IPUtil.getIpAddr(request);
         BaseResult<Map<String, String>> mapBaseResult = orderService.createOrder((paramOrder.getPayType()==1?custDto.getOpenid():custDto.getXcxOpenid()), ip, orderDto, paramOrder.getAttrList());
+        String prepayId = mapBaseResult.getData().get("package");
+        String orderId = mapBaseResult.getData().get("orderId");
+        jedisUtil.set("CANCEL_PAY_" + orderId, prepayId, 15*60);
         return mapBaseResult;
     }
 
@@ -270,7 +273,7 @@ public class OrderController {
         JSONObject paramJson = JSON.parseObject(paramStr);
         String orderId = paramJson.getString("orderId");
         String prepayId = paramJson.getString("prepayId");
-        String existsPrepayId = jedisUtil.get("CANCLE_PAY_" + orderId);
+        String existsPrepayId = jedisUtil.get("CANCEL_PAY_" + orderId);
         if(StringUtils.isBlank(existsPrepayId)){
             return new BaseResult(BaseConstant.FAILED, "订单不能取消");
         }
