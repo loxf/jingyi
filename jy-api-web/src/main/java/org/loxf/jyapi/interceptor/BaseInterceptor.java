@@ -24,7 +24,7 @@ import java.io.PrintWriter;
 
 public class BaseInterceptor extends HandlerInterceptorAdapter {
     private static Logger logger = LoggerFactory.getLogger(BaseInterceptor.class);
-    private static String [] excludeUrl = {"/api/weixin/*", "/api/login", "/api/loginByWx", "/api/loginByXcx", "/api/loginByXcxTmpToken", "/api/cancelPay"};
+    private static String [] excludeUrl = {"/api/weixin/*", "/api/login", "/api/loginByWx", "/api/loginByXcx", "/api/loginByXcxTmpToken", "/api/cancelPay", "/api/share/shareInfoXcx"};
     @Value("#{configProperties['SYSTEM.DEBUG']}")
     private Boolean debug;
     @Value("#{configProperties['JYZX.ENV']}")
