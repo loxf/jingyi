@@ -2,12 +2,14 @@ package org.loxf.jyapi.web;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.github.wxpay.sdk.WXPayUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.loxf.jyadmin.base.bean.BaseResult;
 import org.loxf.jyadmin.base.constant.BaseConstant;
 import org.loxf.jyadmin.base.exception.BizException;
 import org.loxf.jyadmin.base.util.IdGenerator;
 import org.loxf.jyadmin.base.util.JedisUtil;
+import org.loxf.jyadmin.base.util.encryption.Base64Util;
 import org.loxf.jyadmin.base.util.weixin.WeixinUtil;
 import org.loxf.jyadmin.base.util.weixin.bean.UserAccessToken;
 import org.loxf.jyadmin.base.util.weixin.bean.WXUserInfo;
@@ -24,6 +26,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
@@ -87,6 +92,19 @@ public class LoginController {
         if(xcxLoginInfo==null){
             return new BaseResult(BaseConstant.FAILED, "登录校验码不正确");
         }
+        // https://developers.weixin.qq.com/miniprogram/dev/api/unionID.html
+        // 新户，从调用接口wx.getUserInfo，从解密数据中获取UnionID。注意本接口需要用户授权，请开发者妥善处理用户拒绝授权后的情况。
+        if(StringUtils.isBlank(xcxLoginInfo.getUnionid())){
+            String encryptedData = paramJson.getString("encryptedData");
+            String iv = paramJson.getString("iv");
+            try {
+                String unionId = decryptXCXData(xcxId, xcxLoginInfo.getSession_key(), encryptedData, iv);
+                xcxLoginInfo.setUnionid(unionId);
+            } catch (BizException e){
+                return new BaseResult(BaseConstant.FAILED, e.getName());
+            }
+
+        }
         // 根据unionId查询用户是否存在
         BaseResult<CustDto> custDtoBaseResult = custService.queryCustByUnionId(xcxLoginInfo.getUnionid());
         // 用户信息
@@ -120,6 +138,31 @@ public class LoginController {
         return new BaseResult(jsonObject);
     }
 
+    private static String decryptXCXData(String xcxId, String sessionKey, String encryptedData, String iv){
+        byte[] encryptedByte = Base64Util.decode(encryptedData);
+        byte[] aeskey = Base64Util.decode(sessionKey);
+        byte[] ivByte = Base64Util.decode(iv);
+        try {
+            IvParameterSpec ivSpec = new IvParameterSpec(ivByte);
+            SecretKeySpec skeySpec = new SecretKeySpec(aeskey, "AES");
+
+            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
+            cipher.init(Cipher.DECRYPT_MODE, skeySpec, ivSpec);
+
+            byte[] original = cipher.doFinal(encryptedByte);
+            String str = new String(original);
+            JSONObject jsonObject = JSON.parseObject(str);
+            String appId = jsonObject.getJSONObject("watermark").getString("appid");
+            if(appId.equalsIgnoreCase(xcxId)) {
+                return jsonObject.getString("unionId");
+            } else {
+                throw new BizException("APPID不正确");
+            }
+        } catch (Exception ex) {
+            logger.error("微信小程序用户信息解密失败", ex);
+            throw new BizException("用户信息解密失败");
+        }
+    }
     /**
      * 根据小程序临时登录token登录
      * @param request
