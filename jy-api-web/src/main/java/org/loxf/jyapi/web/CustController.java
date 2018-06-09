@@ -248,9 +248,17 @@ public class CustController {
                             accountService.delAccount(custDto.getCustId());
                         }
                     } else {
+                        // 新绑定用户的时候，用户等级不需要处理
+                        if("NONE".equals(custDto.getUserLevel())) {
+                            custDto.setUserLevel(null);
+                        }
                         bindBaseResult = custService.bindCust(custDto);
                     }
                 } else {
+                    // 新绑定用户的时候，用户等级不需要处理
+                    if("NONE".equals(custDto.getUserLevel())) {
+                        custDto.setUserLevel(null);
+                    }
                     bindBaseResult = custService.bindCust(custDto);
                 }
                 if(bindBaseResult.getCode()==BaseConstant.SUCCESS && StringUtils.isNotBlank(custDto.getOpenid())) {
