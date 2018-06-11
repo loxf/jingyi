@@ -297,17 +297,19 @@ public class DetailController {
             btns.add(createBtn(SHARE_FRIEND, "分享好友一起学习", 1, buyObj, null));
         } else {
             // 还没购买过
-            // 是否是套餐
-            boolean isParentOffer = false;
             JSONObject buyPrivi = null;
+            // 套餐
+            OfferDto parentOffer = findParentOffer(offerId);
+            // 是否是套餐
+            boolean isParentOffer = parentOffer!=null;
+
             if (StringUtils.isNotBlank(buyPriviStr)) {
                 buyPrivi = JSON.parseObject(buyPriviStr);
             }
             // 判断购买权限
             if (buyPrivi==null || buyPrivi.size()<=0) {
                 // 没有任何购买权限，判断是否套餐可以购买
-                OfferDto parentOffer = findParentOffer(offerId);
-                if(parentOffer==null) {
+                if(!isParentOffer) {
                     canPlay = false;
                     btns.add(createBtn(CANNOT_BUY, "不能直接" + str, 0, buyObj, null));
                 } else {
@@ -330,7 +332,6 @@ public class DetailController {
                         canPlay = false;
                         if(!isParentOffer){
                             // 非套餐，判断是否套餐是否可以购买
-                            OfferDto parentOffer = findParentOffer(offerId);
                             if(parentOffer!=null && StringUtils.isNotBlank(parentOffer.getBuyPrivi())) {
                                 // 存在套餐，且可以购买
                                 JSONObject parentPrivi = JSON.parseObject(parentOffer.getBuyPrivi());
@@ -370,7 +371,6 @@ public class DetailController {
                         btns.add(createBtn(BUY_NOW, "立即" + str, 1, buyObj, price + ""));
                         if(!isParentOffer){
                             // 非套餐，判断是否套餐是否可以购买
-                            OfferDto parentOffer = findParentOffer(offerId);
                             if(parentOffer!=null && StringUtils.isNotBlank(parentOffer.getBuyPrivi())) {
                                 // 存在套餐，且可以购买
                                 JSONObject parentBuyPrivi = JSON.parseObject(parentOffer.getBuyPrivi());
@@ -400,7 +400,6 @@ public class DetailController {
                         int cannotBuy = 0;
                         if(!isParentOffer){
                             // 非套餐，判断是否套餐是否可以购买
-                            OfferDto parentOffer = findParentOffer(offerId);
                             if(parentOffer!=null && StringUtils.isNotBlank(parentOffer.getBuyPrivi())) {
                                 // 存在套餐，且可以购买
                                 JSONObject parentPrivi = JSON.parseObject(parentOffer.getBuyPrivi());
@@ -445,7 +444,6 @@ public class DetailController {
 
                         if(!isParentOffer){
                             // 非套餐，判断是否套餐是否可以购买
-                            OfferDto parentOffer = findParentOffer(offerId);
                             if(parentOffer!=null && StringUtils.isNotBlank(parentOffer.getBuyPrivi())) {
                                 // 存在套餐，且可以购买
                                 JSONObject parentBuyPrivi = JSON.parseObject(parentOffer.getBuyPrivi());
