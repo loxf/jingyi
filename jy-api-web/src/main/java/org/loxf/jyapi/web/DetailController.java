@@ -92,6 +92,10 @@ public class DetailController {
             JSONArray offerList = new JSONArray();
             List<OfferDto> offerRels = relOfferBaseResult.getData();
             for (OfferDto childOffer : offerRels){
+                if("VIP".equalsIgnoreCase(childOffer.getOfferType())){
+                    //套餐里面不展示VIP SVIP信息
+                    continue;
+                }
                 JSONObject ofrJson = new JSONObject();
                 if(!canPlay) {
                     // 当前视频不能播放的时候，单独显示购买按钮
@@ -107,28 +111,6 @@ public class DetailController {
                     ofrJson.put("canBuy", -1);
                     ofrJson.put("canBuy", -1);
                 }
-                /*if(childOffer.getOfferType().equals("CLASS")){
-                    // 获取乐视视频ID
-                    BaseResult<VideoConfigDto> videoConfigDtoBaseResult = videoConfigService.queryVideo(childOffer.getMainMedia());
-                    if(videoConfigDtoBaseResult.getCode()==BaseConstant.FAILED || videoConfigDtoBaseResult.getData()==null){
-                        return new BaseResult(BaseConstant.FAILED, "获取视频失败");
-                    }
-                    if(StringUtils.isBlank(mainMedia)){
-                        mainMedia = videoConfigDtoBaseResult.getData().getVideoUnique();
-                    }
-                    ofrJson.put("mainMedia", videoConfigDtoBaseResult.getData().getVideoUnique());
-                    String metaDataStr = childOffer.getMetaData();
-                    if(StringUtils.isNotBlank(metaDataStr)) {
-                        JSONObject metaData = JSON.parseObject(metaDataStr);
-                        if (metaData.containsKey("TEACHER")) {
-                            ofrJson.put("teacher", metaData.getJSONArray("TEACHER"));
-                        } else {
-                            ofrJson.put("teacher", null);
-                        }
-                    } else {
-                        ofrJson.put("teacher", null);
-                    }
-                }*/
                 ofrJson.put("offerId", childOffer.getOfferId());
                 ofrJson.put("offerName", childOffer.getOfferName());
                 ofrJson.put("offerType", childOffer.getOfferType());
@@ -224,7 +206,15 @@ public class DetailController {
             boolean canPlay = dealOfferBtn("CLASS", custDto.getCustId(), custDto.getUserLevel(), offerId, buyPriviStr, btns);
 
             result.put("isPlay", (canPlay?1:0));
-            result.put("btns", btns);
+            // 最多两个按钮
+            if(btns!=null && btns.size()>2){
+                JSONArray resultBtns = new JSONArray();
+                resultBtns.add(btns.get(0));
+                resultBtns.add(btns.get(1));
+                result.put("btns", resultBtns);
+            }  else {
+                result.put("btns", btns);
+            }
             // 获取视频链接
             BaseResult<String> videoUrlBaseResult = videoConfigService.queryUrl(offerDto.getMainMedia(),"m3u8_hd");
             if(videoUrlBaseResult.getCode()==BaseConstant.FAILED){
