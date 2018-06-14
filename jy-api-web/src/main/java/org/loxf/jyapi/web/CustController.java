@@ -261,12 +261,14 @@ public class CustController {
                     }
                     bindBaseResult = custService.bindCust(custDto);
                 }
-                if(bindBaseResult.getCode()==BaseConstant.SUCCESS && StringUtils.isNotBlank(custDto.getOpenid())) {
-                    // 绑定成功发通知
-                    sendUserBindNotice(custDto.getOpenid(), custDto.getNickName(), (isChinese == 1 ? phone : email));
+                if(bindBaseResult.getCode()==BaseConstant.SUCCESS) {
+                    if(StringUtils.isNotBlank(custDto.getOpenid())) {
+                        // 绑定成功发通知
+                        sendUserBindNotice(custDto.getOpenid(), custDto.getNickName(), (isChinese == 1 ? phone : email));
+                    }
                     // 刷新缓存
                     LoginController.setCustInfoSessionAndCookie(request, response, custService, jedisUtil,
-                            custDto.getOpenid(), 60*60*2, loginType);
+                            custDto.getUnionid(), 60*60*2, loginType);
                 }
                 return bindBaseResult;
             } else {
