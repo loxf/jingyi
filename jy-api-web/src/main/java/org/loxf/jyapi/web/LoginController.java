@@ -123,6 +123,7 @@ public class LoginController {
             custDto.setCustId(custBaseResult.getData());
         } else {
             // 存在 更新
+            custDto.setRecommend(null);
             custDto.setCustId(custDtoBaseResult.getData().getCustId());
             xcxLoginInfo.setCustId(custDtoBaseResult.getData().getCustId());
             custDto.setXcxOpenid(xcxLoginInfo.getOpenid());
@@ -295,6 +296,7 @@ public class LoginController {
         int expireSecond = Integer.valueOf(userAccessToken.getExpires_in());
         userAccessToken.setExpires_in((expireSecond * 1000 + System.currentTimeMillis()) + "");
         if (baseResult.getCode() == BaseConstant.SUCCESS && baseResult.getData() != null) {
+            custDto.setRecommend(null);
             custService.refreshCustByUnionId(custDto, userAccessToken);
         } else {
             if (StringUtils.isNotBlank(recommend)) {

@@ -34,7 +34,7 @@ public class BaseInterceptor extends HandlerInterceptorAdapter {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         try {
             setResponse(request, response);
-        } catch (Exception e){
+        } catch (Exception e) {
             logger.error("拦截器设置response失败", e);
         }
         logger.info("请求路径:{}, sessionId:{}", request.getRequestURI(), request.getSession().getId());
