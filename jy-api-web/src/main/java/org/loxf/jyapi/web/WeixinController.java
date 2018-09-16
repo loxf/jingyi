@@ -7,6 +7,7 @@ import org.loxf.jyadmin.base.bean.BaseResult;
 import org.loxf.jyadmin.base.constant.BaseConstant;
 import org.loxf.jyadmin.base.constant.WeChatMessageConstant;
 import org.loxf.jyadmin.base.util.JedisUtil;
+import org.loxf.jyadmin.base.util.XmlUtil;
 import org.loxf.jyadmin.client.dto.OrderDto;
 import org.loxf.jyadmin.client.service.AccountService;
 import org.loxf.jyadmin.client.service.OrderService;
@@ -84,7 +85,7 @@ public class WeixinController {
             in.close();
             inputStream.close();
             logger.debug("接收到的微信POST消息：" + notifyData.toString());
-            Map msgMap = WXPayUtil.xmlToMap(notifyData.toString());
+            Map msgMap = XmlUtil.xmlToMap(notifyData.toString());
             if(msgMap.containsKey("MsgType")) {
                 if(msgMap.get("MsgType").equals(WeChatMessageConstant.MESSAGE_EVENT)) {
                     // 事件推送
@@ -233,7 +234,7 @@ public class WeixinController {
     public static BaseResult<Map<String, String>> payNotifySign(String notifyData) {
         Map<String, String> notifyMap = null;  // 转换成map
         try {
-            notifyMap = WXPayUtil.xmlToMap(notifyData);
+            notifyMap = XmlUtil.xmlToMap(notifyData);
             if (notifyMap.get("result_code").equals("SUCCESS")) {
                 String env = notifyMap.get("device_info");
                 WeixinPayConfig config = new WeixinPayConfig();
